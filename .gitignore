@@ -1,0 +1,19 @@
+# Build artifacts (Go toolchain + rclone checkout downloaded by build-wasm.sh)
+build_tmp/
+build_tmp.bak
+tmp_rclone_build/
+
+# Packaged extension archives
+test_builds/
+*.zip
+
+# Node (unit tests)
+node_modules/
+
+# Editor / tooling local state
+.claude/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

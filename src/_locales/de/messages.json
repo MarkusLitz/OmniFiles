@@ -1,0 +1,198 @@
+{
+  "ext_name":        { "message": "OmniFiles" },
+  "ext_desc":        { "message": "Cloud-Speicher nativ in ChromeOS Files einbinden" },
+
+  "nav_dashboard":   { "message": "Dashboard" },
+  "nav_manage":      { "message": "Remotes verwalten" },
+  "nav_add":         { "message": "Neuen Remote hinzufügen" },
+  "nav_guided":      { "message": "Geführte Einrichtung" },
+  "nav_advanced":    { "message": "Erweitert (Raw Config)" },
+  "nav_quickaccess": { "message": "🔗 Schnellzugriff" },
+
+  "btn_auto_mode":   { "message": "🌗 Auto" },
+  "btn_dark_mode":   { "message": "🌙 Dunkel" },
+  "btn_light_mode":  { "message": "☀️ Hell" },
+
+  "tab_dashboard":   { "message": "Dashboard" },
+  "dash_overview":   { "message": "Übersicht der aktiven Mounts und Operationen." },
+  "dash_loading":    { "message": "Dashboard-Daten werden geladen..." },
+  "dash_no_mounts":  { "message": "Keine aktiven Mounts gefunden. Binde einen Remote in ChromeOS ein, um ihn hier zu sehen." },
+  "dash_storage":    { "message": "Speicher:" },
+  "dash_type":       { "message": "Typ:" },
+  "dash_uploads":    { "message": "Aktive Uploads:" },
+  "dash_na":         { "message": "N/V" },
+
+  "tab_manage":      { "message": "Deine Remotes" },
+  "manage_desc":     { "message": "Diese Remotes werden automatisch in der ChromeOS Files App eingebunden." },
+  "manage_empty":    { "message": "Keine Remotes konfiguriert. Füge einen hinzu, um zu starten." },
+  "btn_delete":      { "message": "Löschen" },
+  "btn_edit":        { "message": "Bearbeiten" },
+  "confirm_delete": {
+    "message": "Remote '$1' wirklich löschen?",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+
+  "tab_wizard":      { "message": "Neuen Remote hinzufügen" },
+  "wizard_desc":     { "message": "Erstelle eine neue OmniFiles-Konfiguration Schritt für Schritt." },
+  "lbl_provider":    { "message": "Anbieter-Typ" },
+  "opt_select_provider": { "message": "Anbieter auswählen..." },
+  "lbl_remote_name": { "message": "Remote-Name" },
+  "ph_remote_name":  { "message": "z.B. meinlaufwerk" },
+  "help_remote_name":{ "message": "Nur Buchstaben, Zahlen, Unterstriche und Bindestriche. Keine Leerzeichen." },
+  "btn_save_remote": { "message": "Remote speichern" },
+  "btn_cancel":      { "message": "Abbrechen" },
+
+  "tab_guided":      { "message": "Geführte Einrichtung" },
+  "step1_label":     { "message": "1. Name & Typ" },
+  "step2_label":     { "message": "2. Zugangsdaten" },
+  "step3_label":     { "message": "3. Optionen" },
+  "step4_label":     { "message": "4. Fertig" },
+  "step4_title":     { "message": "Bereit zum Testen" },
+  "step4_desc":      { "message": "Klicke auf \"Verbindung testen\", um deine Einstellungen zu prüfen." },
+  "btn_prev":        { "message": "Zurück" },
+  "btn_next":        { "message": "Weiter" },
+  "btn_save":        { "message": "Speichern" },
+  "btn_test":        { "message": "Verbindung testen" },
+  "no_optional":     { "message": "Keine optionalen Einstellungen für diesen Anbieter." },
+
+  "tab_advanced":    { "message": "Erweiterte Konfiguration" },
+  "advanced_desc":   { "message": "Bearbeite die Konfiguration direkt. Nützlich zum Einfügen einer bestehenden OmniFiles Config (rclone.conf syntax) vom Desktop." },
+  "btn_save_config": { "message": "Konfiguration speichern" },
+  "btn_export":      { "message": "Exportieren" },
+  "btn_import":      { "message": "Importieren" },
+
+  "tab_quickaccess": { "message": "🔗 Schnellzugriff" },
+  "clip_desc":       { "message": "Hier findest du zuletzt generierte Links und kopierte Pfade aus dem Rechtsklick-Menü der Files App." },
+  "clip_link_title": { "message": "🔗 Zuletzt generierter Link" },
+  "clip_link_empty": { "message": "Noch kein Link generiert. Rechtsklick auf eine Datei → \"Link kopieren\"." },
+  "clip_path_title": { "message": "📋 Zuletzt kopierter Pfad" },
+  "clip_path_empty": { "message": "Noch kein Pfad kopiert. Rechtsklick auf eine Datei → \"Pfad kopieren\"." },
+  "btn_copy_clip":   { "message": "In Zwischenablage kopieren" },
+  "btn_open_browser":{ "message": "Im Browser öffnen" },
+  "btn_refresh":     { "message": "🔄 Aktualisieren" },
+  "copy_success":    { "message": "✓ Kopiert!" },
+  "clip_link_meta": {
+    "message": "Datei: $FILE$ • $DATE$",
+    "placeholders": { "file": { "content": "$1" }, "date": { "content": "$2" } }
+  },
+  "clip_path_meta": {
+    "message": "Kopiert: $DATE$",
+    "placeholders": { "date": { "content": "$1" } }
+  },
+
+  "page_title":         { "message": "OmniFiles – Einstellungen" },
+
+  "msg_error_saving": {
+    "message": "Fehler beim Speichern: $ERR$",
+    "placeholders": { "err": { "content": "$1" } }
+  },
+  "msg_config_saved":   { "message": "Konfiguration erfolgreich gespeichert!" },
+  "msg_no_config_test": { "message": "Keine Konfiguration zum Testen." },
+  "msg_testing":        { "message": "Teste Verbindung..." },
+  "msg_conn_ok": {
+    "message": "Verbindung erfolgreich! Gefundene Remotes: $LIST$",
+    "placeholders": { "list": { "content": "$1" } }
+  },
+  "msg_conn_fail": {
+    "message": "Verbindung fehlgeschlagen: $ERR$",
+    "placeholders": { "err": { "content": "$1" } }
+  },
+  "msg_no_export":      { "message": "Keine Konfiguration zum Exportieren." },
+  "msg_export_ok":      { "message": "Konfiguration erfolgreich exportiert!" },
+  "msg_import_ok": {
+    "message": "Konfiguration importiert. Klicke auf \"$BTN$\", um sie anzuwenden.",
+    "placeholders": { "btn": { "content": "$1" } }
+  },
+  "msg_name_type_req":  { "message": "Name und Typ sind erforderlich." },
+  "msg_invalid_name":   { "message": "Ungültiges Remote-Namensformat." },
+  "msg_name_req":       { "message": "Remote-Name ist erforderlich." },
+
+  "action_copy_link":     { "message": "🔗 Link kopieren" },
+  "action_copy_path":     { "message": "📋 Pfad kopieren" },
+  "action_file_info":     { "message": "ℹ️ Datei-Details" },
+  "action_cache_refresh": { "message": "🔄 Cache leeren" },
+
+  "notif_stream_title": {
+    "message": "Hochladen (Stream): $FILE$",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_stream_init":    { "message": "Finalisiere Upload..." },
+  "notif_stream_ok_title":{ "message": "Upload erfolgreich (Stream)" },
+  "notif_stream_ok_msg": {
+    "message": "$FILE$ wurde gestreamt und hochgeladen.",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_upload_title": {
+    "message": "Hochladen: $FILE$",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_upload_init":  { "message": "Initiiere Upload..." },
+  "notif_upload_prog": {
+    "message": "$PCT$% hochgeladen",
+    "placeholders": { "pct": { "content": "$1" } }
+  },
+  "notif_upload_ok_title": { "message": "Upload erfolgreich" },
+  "notif_upload_ok_msg": {
+    "message": "$FILE$ wurde hochgeladen.",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_upload_fail":  { "message": "Upload fehlgeschlagen" },
+
+  "notif_link_title": {
+    "message": "🔗 Link generiert: $FILE$",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_btn_browser":    { "message": "Im Browser öffnen" },
+  "notif_link_fail":      { "message": "❌ Link-Generierung fehlgeschlagen" },
+  "notif_link_no_url":    { "message": "Kein Link erhalten — Backend unterstützt möglicherweise keine öffentlichen Links." },
+  "notif_path_title":     { "message": "📋 OmniFiles-Pfad" },
+  "notif_info_title": {
+    "message": "ℹ️ $FILE$",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_info_fail":      { "message": "❌ Details fehlgeschlagen" },
+  "notif_info_no_data":   { "message": "Keine Metadaten erhalten." },
+  "notif_cache_title":    { "message": "🔄 Cache geleert" },
+  "notif_cache_msg": {
+    "message": "$COUNT$ Eintrag/Einträge aus dem Cache entfernt. Verzeichnis wird neu geladen.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+
+  "info_name": {
+    "message": "Name:     $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_type": {
+    "message": "Typ:      $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_size": {
+    "message": "Größe:    $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_modified": {
+    "message": "Geändert: $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_mime": {
+    "message": "MIME:     $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_type_folder": { "message": "Ordner" },
+  "info_type_file":   { "message": "Datei" },
+  "info_size_dir":    { "message": "(Ordner)" },
+
+  "footer_legal_link":   { "message": "⚖️ Rechtliche Hinweise" },
+  "license_modal_title": { "message": "Lizenzinformationen" },
+  "license_modal_intro": { "message": "Diese Anwendung nutzt rclone im WebAssembly-Format, lizenziert unter der MIT-Lizenz. Copyright (c) 2012 Nick Craig-Wood. Der vollständige Lizenztext von rclone ist nachfolgend aufgeführt und liegt der Erweiterung als Datei 'LICENSE-rclone.txt' bei." },
+  "btn_close":            { "message": "Schließen" },
+
+  "notif_auth_title":    { "message": "Autorisierung abgelaufen: $REMOTE$", "placeholders": { "remote": { "content": "$1" } } },
+  "notif_auth_msg":      { "message": "Das OAuth-Token für \"$REMOTE$\" ist abgelaufen oder wurde widerrufen. Bitte hinterlege in den Einstellungen ein neues Token (rclone authorize).", "placeholders": { "remote": { "content": "$1" } } },
+  "notif_btn_settings":  { "message": "Einstellungen öffnen" },
+  "status_auth_expired": { "message": "Token abgelaufen" },
+
+  "notif_download_title": { "message": "Herunterladen: $FILE$", "placeholders": { "file": { "content": "$1" } } },
+  "notif_download_prog":  { "message": "$PCT$% heruntergeladen", "placeholders": { "pct": { "content": "$1" } } }
+}
+

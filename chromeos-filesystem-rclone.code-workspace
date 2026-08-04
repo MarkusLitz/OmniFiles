@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/tmp_rclone_build": true,
+			"**/build_tmp": true
+		},
+		"search.exclude": {
+			"**/tmp_rclone_build": true,
+			"**/build_tmp": true
+		},
+		"files.watcherExclude": {
+			"**/tmp_rclone_build/**": true,
+			"**/build_tmp/**": true
+		}
+	}
+}

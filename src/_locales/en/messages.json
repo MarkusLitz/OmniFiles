@@ -1,0 +1,198 @@
+{
+  "ext_name":        { "message": "OmniFiles" },
+  "ext_desc":        { "message": "Mount cloud storage natively in ChromeOS Files" },
+
+  "nav_dashboard":   { "message": "Dashboard" },
+  "nav_manage":      { "message": "Manage Remotes" },
+  "nav_add":         { "message": "Add New Remote" },
+  "nav_guided":      { "message": "Guided Setup" },
+  "nav_advanced":    { "message": "Advanced (Raw Config)" },
+  "nav_quickaccess": { "message": "🔗 Quick Access" },
+
+  "btn_auto_mode":   { "message": "🌗 Auto" },
+  "btn_dark_mode":   { "message": "🌙 Dark" },
+  "btn_light_mode":  { "message": "☀️ Light" },
+
+  "tab_dashboard":   { "message": "Dashboard" },
+  "dash_overview":   { "message": "Overview of active mounts and operations." },
+  "dash_loading":    { "message": "Loading dashboard data..." },
+  "dash_no_mounts":  { "message": "No active mounts found. Mount a remote in ChromeOS to see it here." },
+  "dash_storage":    { "message": "Storage:" },
+  "dash_type":       { "message": "Type:" },
+  "dash_uploads":    { "message": "Active Uploads:" },
+  "dash_na":         { "message": "N/A" },
+
+  "tab_manage":      { "message": "Your Remotes" },
+  "manage_desc":     { "message": "These remotes will be automatically mounted in the ChromeOS Files app." },
+  "manage_empty":    { "message": "No remotes configured. Add one to get started." },
+  "btn_delete":      { "message": "Delete" },
+  "btn_edit":        { "message": "Edit" },
+  "confirm_delete": {
+    "message": "Are you sure you want to delete the remote '$1'?",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+
+  "tab_wizard":      { "message": "Add New Remote" },
+  "wizard_desc":     { "message": "Create a new OmniFiles configuration step-by-step." },
+  "lbl_provider":    { "message": "Provider Type" },
+  "opt_select_provider": { "message": "Select a provider..." },
+  "lbl_remote_name": { "message": "Remote Name" },
+  "ph_remote_name":  { "message": "e.g. mydrive" },
+  "help_remote_name":{ "message": "Alphanumeric characters, underscores, and dashes only. No spaces." },
+  "btn_save_remote": { "message": "Save Remote" },
+  "btn_cancel":      { "message": "Cancel" },
+
+  "tab_guided":      { "message": "Guided Setup" },
+  "step1_label":     { "message": "1. Name & Type" },
+  "step2_label":     { "message": "2. Credentials" },
+  "step3_label":     { "message": "3. Options" },
+  "step4_label":     { "message": "4. Done" },
+  "step4_title":     { "message": "Ready to Test" },
+  "step4_desc":      { "message": "Click \"Test Connection\" to verify your settings." },
+  "btn_prev":        { "message": "Back" },
+  "btn_next":        { "message": "Next" },
+  "btn_save":        { "message": "Save" },
+  "btn_test":        { "message": "Test Connection" },
+  "no_optional":     { "message": "No optional settings for this provider." },
+
+  "tab_advanced":    { "message": "Advanced Configuration" },
+  "advanced_desc":   { "message": "Edit the raw configuration directly. Useful for pasting an existing rclone.conf from your desktop or configuring complex remotes." },
+  "btn_save_config": { "message": "Save Raw Config" },
+  "btn_export":      { "message": "Export Config" },
+  "btn_import":      { "message": "Import Config" },
+
+  "tab_quickaccess": { "message": "🔗 Quick Access" },
+  "clip_desc":       { "message": "Here you find recently generated links and copied paths from the Files app context menu." },
+  "clip_link_title": { "message": "🔗 Last Generated Link" },
+  "clip_link_empty": { "message": "No link generated yet. Right-click a file → \"Copy Link\"." },
+  "clip_path_title": { "message": "📋 Last Copied Path" },
+  "clip_path_empty": { "message": "No path copied yet. Right-click a file → \"Copy Path\"." },
+  "btn_copy_clip":   { "message": "Copy to Clipboard" },
+  "btn_open_browser":{ "message": "Open in Browser" },
+  "btn_refresh":     { "message": "🔄 Refresh" },
+  "copy_success":    { "message": "✓ Copied!" },
+  "clip_link_meta": {
+    "message": "File: $FILE$ • $DATE$",
+    "placeholders": { "file": { "content": "$1" }, "date": { "content": "$2" } }
+  },
+  "clip_path_meta": {
+    "message": "Copied: $DATE$",
+    "placeholders": { "date": { "content": "$1" } }
+  },
+
+  "page_title":         { "message": "OmniFiles – Settings" },
+
+  "msg_error_saving": {
+    "message": "Error saving: $ERR$",
+    "placeholders": { "err": { "content": "$1" } }
+  },
+  "msg_config_saved":   { "message": "Configuration saved successfully!" },
+  "msg_no_config_test": { "message": "No configuration to test." },
+  "msg_testing":        { "message": "Testing connection..." },
+  "msg_conn_ok": {
+    "message": "Connection successful! Remotes found: $LIST$",
+    "placeholders": { "list": { "content": "$1" } }
+  },
+  "msg_conn_fail": {
+    "message": "Connection failed: $ERR$",
+    "placeholders": { "err": { "content": "$1" } }
+  },
+  "msg_no_export":      { "message": "No configuration to export." },
+  "msg_export_ok":      { "message": "Configuration exported successfully!" },
+  "msg_import_ok": {
+    "message": "Configuration imported. Click \"$BTN$\" to apply.",
+    "placeholders": { "btn": { "content": "$1" } }
+  },
+  "msg_name_type_req":  { "message": "Name and type are required." },
+  "msg_invalid_name":   { "message": "Invalid remote name format." },
+  "msg_name_req":       { "message": "Remote name is required." },
+
+  "action_copy_link":     { "message": "🔗 Copy Link" },
+  "action_copy_path":     { "message": "📋 Copy Path" },
+  "action_file_info":     { "message": "ℹ️ File Details" },
+  "action_cache_refresh": { "message": "🔄 Clear Cache" },
+
+  "notif_stream_title": {
+    "message": "Uploading (Stream): $FILE$",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_stream_init":    { "message": "Finalizing upload..." },
+  "notif_stream_ok_title":{ "message": "Upload successful (Stream)" },
+  "notif_stream_ok_msg": {
+    "message": "$FILE$ was streamed and uploaded.",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_upload_title": {
+    "message": "Uploading: $FILE$",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_upload_init":  { "message": "Initiating upload..." },
+  "notif_upload_prog": {
+    "message": "$PCT$% uploaded",
+    "placeholders": { "pct": { "content": "$1" } }
+  },
+  "notif_upload_ok_title": { "message": "Upload successful" },
+  "notif_upload_ok_msg": {
+    "message": "$FILE$ was uploaded.",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_upload_fail":  { "message": "Upload failed" },
+
+  "notif_link_title": {
+    "message": "🔗 Link generated: $FILE$",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_btn_browser":    { "message": "Open in Browser" },
+  "notif_link_fail":      { "message": "❌ Link generation failed" },
+  "notif_link_no_url":    { "message": "No link received — backend may not support public links." },
+  "notif_path_title":     { "message": "📋 OmniFiles Path" },
+  "notif_info_title": {
+    "message": "ℹ️ $FILE$",
+    "placeholders": { "file": { "content": "$1" } }
+  },
+  "notif_info_fail":      { "message": "❌ Details failed" },
+  "notif_info_no_data":   { "message": "No metadata received." },
+  "notif_cache_title":    { "message": "🔄 Cache cleared" },
+  "notif_cache_msg": {
+    "message": "$COUNT$ entry/entries removed from cache. Directory will reload.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+
+  "info_name": {
+    "message": "Name:     $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_type": {
+    "message": "Type:     $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_size": {
+    "message": "Size:     $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_modified": {
+    "message": "Modified: $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_mime": {
+    "message": "MIME:     $V$",
+    "placeholders": { "v": { "content": "$1" } }
+  },
+  "info_type_folder": { "message": "Folder" },
+  "info_type_file":   { "message": "File" },
+  "info_size_dir":    { "message": "(Folder)" },
+
+  "footer_legal_link":   { "message": "⚖️ Legal Notices" },
+  "license_modal_title": { "message": "License Information" },
+  "license_modal_intro": { "message": "This application uses rclone in WebAssembly format, licensed under the MIT License. Copyright (c) 2012 Nick Craig-Wood. The full rclone license text is shown below and is also shipped with this extension as 'LICENSE-rclone.txt'." },
+  "btn_close":            { "message": "Close" },
+
+  "notif_auth_title":    { "message": "Authorization expired: $REMOTE$", "placeholders": { "remote": { "content": "$1" } } },
+  "notif_auth_msg":      { "message": "The OAuth token for \"$REMOTE$\" has expired or been revoked. Please add a fresh token in the settings (rclone authorize).", "placeholders": { "remote": { "content": "$1" } } },
+  "notif_btn_settings":  { "message": "Open settings" },
+  "status_auth_expired": { "message": "Token expired" },
+
+  "notif_download_title": { "message": "Downloading: $FILE$", "placeholders": { "file": { "content": "$1" } } },
+  "notif_download_prog":  { "message": "$PCT$% downloaded", "placeholders": { "pct": { "content": "$1" } } }
+}
+
