@@ -836,3 +836,13 @@ The working tree contained an unresolved Git conflict (`<<<<<<< HEAD` markers) b
 - **Documentation Overhaul:** Rewrote `README.md` to improve project description, simplify setup instructions, update technical expectations, and lower the entry barrier (`37c3d6c`, `4c4fa37`).
 
 
+
+---
+
+## 2026-09-04 – Session: Documentation Drift Cleanup
+- **`docs/TESTING.md`:** Rewritten against current behaviour. The previous version still described the April mock phase (mount → single hardcoded `test-file.txt` containing `Hello from Rclone WASM!`), which had not matched the extension since real rclone-backed CRUD landed. Now covers: off-device unit tests, install, remote configuration, mounting, full CRUD with the same-remote copy/move limitation called out, the 4 MB buffered-vs-streaming upload split, download progress, thumbnails and the 32 KB FSP cap, all four context-menu actions (including that results surface as notifications, since a Service Worker cannot reach the clipboard), dashboard health checks with the offline and `invalid_grant` failure paths, unmount, localisation, and Service Worker troubleshooting.
+- **`tests/config-utils.test.js`:** Corrected the documented run command to `node --test tests/*.test.js`; the previous `node --test tests/` does not resolve the suite on current Node and exits with a failure.
+- **`README.md`:** Fixed the clone URL, which pointed at the pre-rename `MarkusLitz/chromeos-filesystem-rclone.git` and does not resolve — installation step 1 was unfollowable. Updated the project-structure tree root to `OmniFiles/`.
+- **`docs/ROADMAP.md`:** Marked the "Stale Testing Documentation & Test Command" item done.
+
+**Note:** Documentation only — no source, manifest or WASM changes. 18/18 unit tests still passing.

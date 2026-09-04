@@ -118,7 +118,7 @@ S3-compatible providers (Wasabi, DigitalOcean Spaces, MinIO, Ceph, etc.) are sup
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/MarkusLitz/chromeos-filesystem-rclone.git
+   git clone https://github.com/MarkusLitz/OmniFiles.git
    ```
 
 2. On your Chromebook, open `chrome://extensions/`
@@ -253,7 +253,7 @@ The resulting `rclone.wasm` is approximately 73 MB.
 ## Project Structure
 
 ```
-chromeos-filesystem-rclone/
+OmniFiles/
 ├── src/                          # Extension source (load this in chrome://extensions)
 │   ├── manifest.json             # MV3 manifest with FSP capabilities
 │   ├── background.js             # Service Worker — FSP handlers, caching, notifications

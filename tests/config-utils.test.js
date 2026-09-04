@@ -1,5 +1,6 @@
 // Unit tests for the pure helpers in src/config-utils.js
-// Run with:  node --test tests/
+// Run with:  node --test tests/*.test.js
+// (a bare `node --test tests/` does not resolve the suite and fails)
 
 const { test } = require('node:test');
 const assert = require('node:assert');

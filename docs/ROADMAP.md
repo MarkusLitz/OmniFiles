@@ -111,8 +111,9 @@ As of: 2026-07-29 · Consolidated roadmap & completed milestone tracking.
   4. **Dynamic i18n Fallback:**
      * Ensure that the JavaScript (`applyI18n`) automatically falls back to the English translation if translations are missing in a target language (`chrome.i18n.getMessage` does this by default, but it must be robustly secured in the custom code).
 
-### 🧪 Stale Testing Documentation & Test Command (identified 2026-07-27)
+### ✅ Stale Testing Documentation & Test Command (identified 2026-07-27 · done 2026-09-04)
 - **Problem:**
   - `docs/TESTING.md` still describes the April mock-phase build: mounting shows a single hardcoded `test-file.txt` containing `Hello from Rclone WASM!`. The extension has long since moved past static mock FSP handlers to real rclone-backed CRUD, so the verification steps no longer match actual behavior and can't be followed as a real smoke test.
   - The test command documented in `tests/config-utils.test.js` (`node --test tests/`) and referenced in the README fails with `MODULE_NOT_FOUND` on current Node — `node --test tests/` does not glob `.test.js` files the way `node --test tests/*.test.js` does. Only the latter (also documented in `package.json`-less form in README's project structure table) actually runs the suite.
 - **Solution:** Rewrite `docs/TESTING.md` against the current FSP flow (real remote listing/read/write/thumbnails/context menu, not a static dummy file), and correct the test invocation everywhere it's documented (`README.md`, `tests/config-utils.test.js` header comment, `docs/ROADMAP.md`'s own "Automated Tests" section) to `node --test tests/*.test.js`.
+- **Done (2026-09-04):** `docs/TESTING.md` rewritten against current behaviour — unit tests, install, real-remote CRUD, the 4 MB buffered/streaming upload split, thumbnails, all four context-menu actions, dashboard health checks including the `invalid_grant` path, and unmount. The stale `node --test tests/` invocation was corrected in `tests/config-utils.test.js`; the README's clone URL still pointed at the pre-rename `chromeos-filesystem-rclone.git` (which does not resolve) and now uses `OmniFiles.git`.
