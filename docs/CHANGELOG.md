@@ -846,3 +846,16 @@ The working tree contained an unresolved Git conflict (`<<<<<<< HEAD` markers) b
 - **`docs/ROADMAP.md`:** Marked the "Stale Testing Documentation & Test Command" item done.
 
 **Note:** Documentation only — no source, manifest or WASM changes. 18/18 unit tests still passing.
+
+---
+
+## 2026-09-04 – Session: Options-Page HTML Escaping
+
+### Untrusted config data reaching innerHTML (`src/options.js`, `src/config-utils.js`, `src/options.html`)
+- **Problem:** Two options-page renderers built markup from template literals without escaping their interpolations. `renderDashboard()` inlined `item.name` and `item.type`, and `renderRemoteList()` inlined the remote name, `statusClass`, `statusTitle` and `typeName`. Both values originate in the stored `rclone.conf` — whose section names and `type` values the user can also *import* from a file on disk, so the content is not necessarily their own. A section named `[<img src=x onerror=…>]` was parsed as markup. The two `fetchDashboardData()` error branches interpolated `chrome.runtime.lastError.message` / `response.error` the same way.
+- **Impact:** Not code execution — the extension-page CSP (`script-src 'self'`) blocks inline event handlers — but an imported config could still inject markup that breaks or defaces the options UI. The CSP should not be the only thing between config data and the DOM.
+- **Fix:** Added `escapeHtml()` to `src/config-utils.js` (escaping `& < > " '`, coercing non-strings, `null`/`undefined` → `''`) and applied it to every untrusted interpolation at the five call sites. Placed in `config-utils.js` rather than `options.js` so the existing Node suite covers it, per the project's pure-helper convention; `options.html` now loads `config-utils.js` ahead of `options.js`. Verified no name collisions with the `parseINI`/`serializeINI` helpers already defined in `options.js`.
+- **Audited and found already correct:** `updateHighlighting()` escapes its input before applying INI syntax highlighting; the wizard form builders (`generateGuidedFields`, `buildWizardForm`) use `textContent` and `document.createElement` throughout. Remaining `innerHTML` writes are static strings or `i18n()` lookups from the bundled locale files.
+- **Tests:** 5 new cases covering markup neutralisation, quote escaping for attribute contexts, ampersand-first ordering, non-string coercion, and ordinary values passing through unchanged. Suite is now 23/23.
+
+**Note:** JS/HTML only — no manifest permission changes and no WASM rebuild. `node --check` clean on all four extension scripts. Real-device check: import a config with a section name containing `<b>x</b>`, then open the Dashboard and Manage tabs — the tag should render as literal text, not as markup.

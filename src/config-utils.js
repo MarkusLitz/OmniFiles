@@ -128,8 +128,36 @@ function isAuthError(err) {
         t.includes('unauthorized');
 }
 
-// Node.js export for the unit tests; in the Service Worker the top-level
-// function declarations above simply become globals via importScripts().
+/**
+ * Escapes text destined for an innerHTML template.
+ *
+ * Remote names and their `type` values come straight from the stored
+ * rclone.conf — an INI file the user can also *import* from disk — so the
+ * content is not necessarily theirs. A section named e.g.
+ * `[<img src=x onerror=...>]` would otherwise be parsed as markup by the
+ * options-page renderers that build dashboard cards and remote-list rows
+ * from template literals.
+ *
+ * The extension-page CSP (script-src 'self') blocks inline handlers, so this
+ * is not code execution — but unescaped markup can still break or deface the
+ * options UI, and the CSP should not be the only thing standing between
+ * config data and the DOM.
+ *
+ * @param {*} value Any value; coerced to string (null/undefined → '').
+ * @returns {string} The value with HTML-significant characters escaped.
+ */
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Node.js export for the unit tests; in the Service Worker (importScripts)
+// and on the options page (<script src>) the top-level function declarations
+// above simply become globals.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { parseIniConfig, serializeIniConfig, sanitizeTokenValue, getParentPath, mapErrorToFsp, isAuthError };
+    module.exports = { parseIniConfig, serializeIniConfig, sanitizeTokenValue, getParentPath, mapErrorToFsp, isAuthError, escapeHtml };
 }

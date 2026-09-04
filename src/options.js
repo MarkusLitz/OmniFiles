@@ -407,11 +407,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         chrome.runtime.sendMessage({ action: 'getDashboardData' }, (response) => {
             if (chrome.runtime.lastError) {
-                dashboardGrid.innerHTML = `<div class="empty-state error">Error: ${chrome.runtime.lastError.message}</div>`;
+                dashboardGrid.innerHTML = `<div class="empty-state error">Error: ${escapeHtml(chrome.runtime.lastError.message)}</div>`;
             } else if (response && response.success) {
                 renderDashboard(response.data);
             } else {
-                dashboardGrid.innerHTML = `<div class="empty-state error">Error: ${response ? response.error : 'Unknown error'}</div>`;
+                dashboardGrid.innerHTML = `<div class="empty-state error">Error: ${escapeHtml(response ? response.error : 'Unknown error')}</div>`;
             }
         });
     }
@@ -473,18 +473,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
             card.innerHTML = `
                 <div class="card-header">
-                    <span class="card-title">${item.name}</span>
-                    <span class="card-status ${statusClass}">${statusLabel}</span>
+                    <span class="card-title">${escapeHtml(item.name)}</span>
+                    <span class="card-status ${escapeHtml(statusClass)}">${escapeHtml(statusLabel)}</span>
                 </div>
                 <div class="card-body">
                     <div class="info-row">
                         <span class="info-label">Type:</span>
-                        <span class="info-value">${item.type}</span>
+                        <span class="info-value">${escapeHtml(item.type)}</span>
                     </div>
                     ${quotaHtml}
                     <div class="info-row">
                         <span class="info-label">Active Uploads:</span>
-                        <span class="info-value">${item.activeUploads}</span>
+                        <span class="info-value">${escapeHtml(item.activeUploads)}</span>
                     </div>
                 </div>
             `;
@@ -492,6 +492,9 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardGrid.appendChild(card);
         });
     }
+
+    // escapeHtml() is provided by config-utils.js (shared with the Node unit
+    // tests in tests/), loaded ahead of this file in options.html.
 
     function formatBytes(bytes, decimals = 2) {
         if (bytes === 0) return '0 Bytes';
@@ -528,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const status = statusObj[name] ? statusObj[name].status : 'unknown';
                 const statusClass = `status-dot status-${status}`;
                 const statusTitle = status === 'auth_expired' ? i18n('status_auth_expired') : status;
-                infoDiv.innerHTML = `<strong>${name} <span class="${statusClass}" title="${statusTitle}"></span></strong><span>${i18n('dash_type')} ${typeName}</span>`;
+                infoDiv.innerHTML = `<strong>${escapeHtml(name)} <span class="${escapeHtml(statusClass)}" title="${escapeHtml(statusTitle)}"></span></strong><span>${i18n('dash_type')} ${escapeHtml(typeName)}</span>`;
                 const actionDiv = document.createElement('div');
                 
                 // Edit Button

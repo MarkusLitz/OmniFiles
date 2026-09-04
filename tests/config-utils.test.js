@@ -11,6 +11,7 @@ const {
     getParentPath,
     mapErrorToFsp,
     isAuthError,
+    escapeHtml,
 } = require('../src/config-utils.js');
 
 // ── parseIniConfig ──────────────────────────────────────────────────────
@@ -137,4 +138,42 @@ test('isAuthError does not fire on ordinary errors', () => {
     assert.strictEqual(isAuthError('connection reset by peer'), false);
     assert.strictEqual(isAuthError(null), false);
     assert.strictEqual(isAuthError(undefined), false);
+});
+
+// ── escapeHtml ──────────────────────────────────────────────────────────
+
+test('escapeHtml neutralizes markup in remote names', () => {
+    assert.strictEqual(
+        escapeHtml('<img src=x onerror=alert(1)>'),
+        '&lt;img src=x onerror=alert(1)&gt;'
+    );
+    assert.strictEqual(
+        escapeHtml('</span><script>bad()</script>'),
+        '&lt;/span&gt;&lt;script&gt;bad()&lt;/script&gt;'
+    );
+});
+
+test('escapeHtml escapes quotes so it is safe inside an attribute', () => {
+    // statusClass/statusTitle land in class="…" and title="…"
+    assert.strictEqual(escapeHtml('a" onmouseover="x'), 'a&quot; onmouseover=&quot;x');
+    assert.strictEqual(escapeHtml("a' onmouseover='x"), 'a&#39; onmouseover=&#39;x');
+});
+
+test('escapeHtml escapes ampersands first, without double-escaping entities', () => {
+    assert.strictEqual(escapeHtml('a & b'), 'a &amp; b');
+    // A literal "&lt;" typed by the user must survive as visible text.
+    assert.strictEqual(escapeHtml('&lt;'), '&amp;lt;');
+});
+
+test('escapeHtml coerces non-string values', () => {
+    assert.strictEqual(escapeHtml(0), '0');
+    assert.strictEqual(escapeHtml(42), '42');
+    assert.strictEqual(escapeHtml(null), '');
+    assert.strictEqual(escapeHtml(undefined), '');
+});
+
+test('escapeHtml leaves ordinary config values untouched', () => {
+    assert.strictEqual(escapeHtml('gdrive'), 'gdrive');
+    assert.strictEqual(escapeHtml('My Work Drive'), 'My Work Drive');
+    assert.strictEqual(escapeHtml('s3'), 's3');
 });
