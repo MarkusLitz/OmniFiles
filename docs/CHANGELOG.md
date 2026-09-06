@@ -921,3 +921,19 @@ Driven in real Chromium (Playwright) against `src/options.html` with the `chrome
 Full edit round-trip driven in real Chromium against `src/options.html` with the `chrome.*` APIs stubbed — 14 assertions, all passing: no "Add New Remote" nav entry, Guided Setup still present, edit pane still in the DOM, Edit button opens it with name/type/token/other fields prefilled, Manage Remotes stays highlighted, heading reads "Edit Remote", Cancel returns to Manage Remotes, Guided Setup still reachable, no page errors. The item-2 landing-tab checks were re-run and still pass.
 
 **Note:** HTML/JS/locale only — no manifest or WASM changes. `node --check` clean, 23/23 unit tests passing.
+
+---
+
+## 2026-09-04 – Session: Open Settings on First Install (Onboarding Plan, item 4)
+
+### `src/background.js`, `src/config-utils.js`
+- **Problem:** Nothing visible happened after "Add to Chrome". `onInstalled` only created the health-check alarm, and with no toolbar `action` the settings page is reachable only through the puzzle-piece overflow menu — which a new user has no reason to open.
+- **Fix:** `onInstalled` now calls `chrome.runtime.openOptionsPage()` on a fresh install. No deep link was needed: with no remotes configured the options page already lands on Guided Setup (item 2), so the `?setup=1` parameter sketched in the plan was never built.
+- **Gate:** Extracted as `shouldOpenSetupPage(details)` in `config-utils.js` rather than inlined, so it can be unit tested — see below for why a browser harness cannot cover it. Returns true only for `reason === 'install'`; `'update'`, `'chrome_update'` and `'shared_module_update'` are all excluded, as is a missing or malformed details object.
+
+### Verification
+- **Install path — verified end to end in real Chromium**, loading the actual extension with `--load-extension`: the service worker starts, a tab opens, it is `options.html`, and it settles on Guided Setup.
+- **Update path — not verifiable in a browser harness, and this was measured rather than assumed.** An unpacked extension loaded from the command line reports `onInstalled` `reason: 'install'` on *every* launch, with `previousVersion: null`, even when the same profile is reused after a manifest version bump. A first attempt to test the gate that way produced a false failure. The gate is instead covered by 3 unit tests (install fires; update / chrome_update / shared_module_update do not; undefined / null / `{}` / empty reason do not). Suite is now 26/26.
+- Two earlier harness bugs worth recording: Playwright's `context.on('page')` does not fire for extension-opened pages in a persistent context (poll `context.pages()` instead), and the landing tab must be polled rather than sampled once, because it is decided after an async `chrome.storage` read.
+
+**Note:** JS only — no manifest, locale or WASM changes. `node --check` clean on both touched files.

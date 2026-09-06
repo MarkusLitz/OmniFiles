@@ -1952,12 +1952,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Background Connection Test
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
     console.log('[Rclone] Creating background alarm...');
     // 15 min (previously 5): every firing wakes the Service Worker and
     // re-injects the entire config — for a pure health indicator on the
     // dashboard, waking 12×/h was needlessly battery-hungry.
     chrome.alarms.create('checkRemotes', { periodInMinutes: 15 });
+
+    // Open the settings page once, on a genuinely fresh install. Until now
+    // nothing visible happened after "Add to Chrome": there is no toolbar
+    // button, so the settings page is reachable only through the puzzle-piece
+    // overflow menu — and a new user has no reason to look there.
+    //
+    // The 'install'-only gate lives in config-utils.js (shouldOpenSetupPage)
+    // so it can be unit tested; see the note there on why a browser harness
+    // cannot exercise the 'update' path.
+    //
+    // No deep link is needed: with no remotes configured the options page
+    // already opens on Guided Setup — see chooseLandingTab() in options.js.
+    if (shouldOpenSetupPage(details)) {
+        chrome.runtime.openOptionsPage();
+    }
 });
 
 // Auto-mount new remotes when rcloneConf changes (e.g. after wizard/advanced save).

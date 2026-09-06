@@ -155,9 +155,30 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+/**
+ * Whether a chrome.runtime.onInstalled event should open the settings page.
+ *
+ * True only for a genuinely fresh install. The extension auto-updates from the
+ * Web Store, so reacting to 'update' — or to 'chrome_update' /
+ * 'shared_module_update', which fire for reasons that have nothing to do with
+ * this extension being added — would spawn a tab in front of users who did not
+ * ask for one. That is user-hostile and a Web Store review risk.
+ *
+ * Extracted here rather than inlined in the listener so the gate is unit
+ * testable: an unpacked extension loaded with --load-extension reports
+ * reason 'install' on every browser launch, so the 'update' path cannot be
+ * exercised in a browser harness.
+ *
+ * @param {{reason?: string}} details The onInstalled event details.
+ * @returns {boolean}
+ */
+function shouldOpenSetupPage(details) {
+    return !!details && details.reason === 'install';
+}
+
 // Node.js export for the unit tests; in the Service Worker (importScripts)
 // and on the options page (<script src>) the top-level function declarations
 // above simply become globals.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { parseIniConfig, serializeIniConfig, sanitizeTokenValue, getParentPath, mapErrorToFsp, isAuthError, escapeHtml };
+    module.exports = { parseIniConfig, serializeIniConfig, sanitizeTokenValue, getParentPath, mapErrorToFsp, isAuthError, escapeHtml, shouldOpenSetupPage };
 }

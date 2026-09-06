@@ -12,6 +12,7 @@ const {
     mapErrorToFsp,
     isAuthError,
     escapeHtml,
+    shouldOpenSetupPage,
 } = require('../src/config-utils.js');
 
 // ── parseIniConfig ──────────────────────────────────────────────────────
@@ -176,4 +177,25 @@ test('escapeHtml leaves ordinary config values untouched', () => {
     assert.strictEqual(escapeHtml('gdrive'), 'gdrive');
     assert.strictEqual(escapeHtml('My Work Drive'), 'My Work Drive');
     assert.strictEqual(escapeHtml('s3'), 's3');
+});
+
+// ── shouldOpenSetupPage ─────────────────────────────────────────────────
+
+test('shouldOpenSetupPage fires only for a genuinely fresh install', () => {
+    assert.strictEqual(shouldOpenSetupPage({ reason: 'install' }), true);
+});
+
+test('shouldOpenSetupPage stays quiet for every non-install reason', () => {
+    // An auto-update from the Web Store must not spawn a tab.
+    assert.strictEqual(shouldOpenSetupPage({ reason: 'update' }), false);
+    // These fire for reasons unrelated to this extension being added.
+    assert.strictEqual(shouldOpenSetupPage({ reason: 'chrome_update' }), false);
+    assert.strictEqual(shouldOpenSetupPage({ reason: 'shared_module_update' }), false);
+});
+
+test('shouldOpenSetupPage tolerates a missing or malformed details object', () => {
+    assert.strictEqual(shouldOpenSetupPage(undefined), false);
+    assert.strictEqual(shouldOpenSetupPage(null), false);
+    assert.strictEqual(shouldOpenSetupPage({}), false);
+    assert.strictEqual(shouldOpenSetupPage({ reason: '' }), false);
 });

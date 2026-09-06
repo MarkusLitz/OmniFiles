@@ -78,6 +78,19 @@ building new configuration UI.
 A and B solve different problems: A fixes minute one, B fixes day thirty.
 Neither substitutes for the other.
 
+> **Implementation note (2026-09-04).** A is done. No deep link was needed:
+> with no remotes configured the options page already opens on Guided Setup
+> (decision 4), so `chrome.runtime.openOptionsPage()` lands in the right place
+> on its own. The `?setup=1` parameter sketched in decision 2 was therefore
+> never built.
+>
+> The `'install'`-only gate lives in `config-utils.js` as
+> `shouldOpenSetupPage()` rather than inline in the listener, because it cannot
+> be verified in a browser harness: an unpacked extension loaded with
+> `--load-extension` reports `reason: 'install'` on **every** launch, with
+> `previousVersion: null`, even after a version bump on the same profile
+> (measured, not assumed). Extracting it puts the gate under unit test instead.
+
 ### 2. Dedicated welcome page vs. reusing the options page
 
 - **A** – Reuse `options.html`, deep-linked to Guided Setup (e.g.
@@ -170,7 +183,7 @@ release**, not five.
 1. Dashboard i18n wiring + empty-state copy *(bugs — done 2026-09-04)*
 2. Conditional landing tab (decision 4) *(done 2026-09-04)*
 3. Collapse the duplicate add-flow (decision 3) *(done 2026-09-04 — see the correction under decision 3)*
-4. `onInstalled` setup tab, gated on `'install'` (decision 1A)
+4. `onInstalled` setup tab, gated on `'install'` (decision 1A) *(done 2026-09-04)*
 5. Provider picker with honest per-provider difficulty labels (decision 6c)
 6. *(follow-up release)* Toolbar `action` + popup (decision 1B)
 
