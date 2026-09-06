@@ -956,7 +956,7 @@ Full edit round-trip driven in real Chromium against `src/options.html` with the
 
 ---
 
-## 2026-09-04 – Release 0.2.1
+## 2026-09-04 – Release 0.3.0
 
 First release since the Web Store listing went up on 2026-08-08. Everything below has been on `main` but not in users' hands.
 
@@ -977,7 +977,7 @@ First release since the Web Store listing went up on 2026-08-08. Everything belo
 - `docs/ONBOARDING_PLAN.md` added, recording phase 3's decisions and two corrections found while implementing them.
 
 ### Version bump rationale
-`VERSIONING.md` calls PATCH "bug fixes, performance optimizations, minor UI tweaks" and MINOR "significant UI improvements". This release removes a nav entry and restructures onboarding, which arguably meets the MINOR bar — `0.3.0` would be defensible. Shipped as `0.2.1` per the maintainer's call.
+`VERSIONING.md` calls MINOR "new features, new rclone backends, or significant UI improvements". This release removes a nav entry, changes which tab the options page opens on, restructures the provider picker and adds an install-time flow — a restructuring of the setup UI, not a tweak. Released as `0.3.0` rather than a patch.
 
 ### Build
-`test_builds/omnifiles-v0.2.1-<timestamp>.zip` (~13 MB, 23 files), verified by loading the unpacked artifact in Chromium: service worker boots, manifest reports 0.2.1, the rclone WASM bridge initialises, the settings page opens on install and lands on Guided Setup with the picker grouped.
+`test_builds/omnifiles-v0.3.0-<timestamp>.zip` (~13 MB, 23 files), verified by loading the unpacked artifact in Chromium: service worker boots, manifest reports 0.3.0, the rclone WASM bridge initialises, the settings page opens on install and lands on Guided Setup with the picker grouped.

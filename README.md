@@ -42,7 +42,7 @@ Nothing has to be copied onto your Chromebook for this to work, and no browser t
 
 - **Chromebooks only.** OmniFiles plugs into the ChromeOS Files app, so it does nothing on Windows, macOS, or desktop Linux.
 - **Connecting an account takes one technical step, for now.** Google Drive, OneDrive, Dropbox and Google Photos each need a one-time authorisation performed on a desktop computer, then pasted in (see [Configuration](#configuration)). Services that use plain access keys, such as S3, skip this entirely. Turning the first kind into an ordinary one-click sign-in is a planned improvement — see the [roadmap](#roadmap).
-- **It's early software.** Version 0.2.1, published on the [Chrome Web Store](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo). Copying files *between* two connected clouds isn't supported yet — copy and move work within one drive at a time.
+- **It's early software.** Version 0.3.0, published on the [Chrome Web Store](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo). Copying files *between* two connected clouds isn't supported yet — copy and move work within one drive at a time.
 
 ---
 
@@ -312,7 +312,7 @@ OmniFiles/
 
 ## Versioning
 
-This project follows [Semantic Versioning 2.0.0](https://semver.org/). The current version is **`0.2.1`**.
+This project follows [Semantic Versioning 2.0.0](https://semver.org/). The current version is **`0.3.0`**.
 
 The `version` field in `src/manifest.json` is the single source of truth.
 

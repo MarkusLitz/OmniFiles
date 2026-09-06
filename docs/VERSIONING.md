@@ -25,7 +25,7 @@ Zip files created for testing should ideally follow the pattern:
 Example: `chromeos-rclone-v0.2.0-20260419-1515.zip`
 
 ## Current Version State (as of 2026-09-04)
-- **Current Version**: `0.2.1`
+- **Current Version**: `0.3.0`
 - **Reason**: First-run experience (Onboarding Plan phase 3) — settings page opens on install, Guided Setup is the single add route and the landing tab when no remotes exist, provider picker grouped by setup effort. Plus two Dashboard bug fixes (hardcoded English, misleading empty state) and HTML escaping for config data on the options page.
 
 ### Previous
