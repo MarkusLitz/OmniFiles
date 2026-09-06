@@ -106,11 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize
     applyI18n();
-    loadConfig();
+    loadConfig();          // also picks the landing tab once the config is known
     populateProviderDropdown();
     setupEventListeners();
     initDarkMode();
-    fetchDashboardData();
     loadClipboardData();
     setupLicenseModal();
 
@@ -136,7 +135,33 @@ document.addEventListener('DOMContentLoaded', () => {
             updateHighlighting(rawText);
             parsedConfig = parseINI(rawText);
             renderRemoteList();
+            chooseLandingTab();
         });
+    }
+
+    /**
+     * Picks which tab the options page opens on.
+     *
+     * With no remotes configured there is nothing for the Dashboard to show, so
+     * landing there strands a first-time user on an empty screen. Send them
+     * straight to Guided Setup instead — the one thing they need to do.
+     *
+     * The Dashboard is the tab marked active in options.html, so the "remotes
+     * exist" case needs no switch, only its data fetch. That fetch is deliberately
+     * *not* fired during init: it messages the Service Worker, which can mean a
+     * cold WASM start, and there is no reason to pay that on a first run that is
+     * about to land somewhere else entirely.
+     */
+    function chooseLandingTab() {
+        if (Object.keys(parsedConfig).length > 0) {
+            fetchDashboardData();
+            return;
+        }
+        // Reuse the nav click handler rather than duplicating the active-class
+        // bookkeeping (same idiom as the post-save/delete tab switches below).
+        const guidedTab = document.querySelector('[data-target="tab-guided"]');
+        if (guidedTab) guidedTab.click();
+        else fetchDashboardData(); // nav item missing — fall back to the default tab
     }
 
     function updateHighlighting(text) {

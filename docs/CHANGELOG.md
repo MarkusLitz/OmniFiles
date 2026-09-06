@@ -885,3 +885,22 @@ The working tree contained an unresolved Git conflict (`<<<<<<< HEAD` markers) b
 - **Fix:** Reworded in both locales to say a connected cloud appears in the Files app automatically, and added an **Add your first cloud** button that opens the Guided Setup tab (using the existing `[data-target]` click idiom rather than introducing a tab-switch helper).
 
 **Note:** JS/locale only — no manifest or WASM changes. Verified: locale JSON parses, en/de parity, all 37 `i18n()` keys used in `options.js` are defined, no hardcoded strings left in the render path, `node --check` clean, 23/23 unit tests passing. Real-device check: open the options page with no remotes configured, in both English and German — the dashboard should be fully translated and offer the add button.
+
+---
+
+## 2026-09-04 – Session: Conditional Landing Tab (Onboarding Plan, item 2)
+
+### `src/options.js`
+- **Problem:** The options page always opened on the Dashboard, which for a user with no remotes configured is an empty screen — a dead end on the one visit where guidance matters most.
+- **Fix:** Added `chooseLandingTab()`, called once the stored config is parsed. No remotes → activate **Guided Setup**; remotes present → stay on the Dashboard (the tab already marked active in `options.html`) and fetch its data. The switch reuses the existing nav-item `.click()` idiom rather than duplicating the active-class bookkeeping, and falls back to the Dashboard if the nav item is ever missing.
+- **Side benefit:** `fetchDashboardData()` is no longer fired unconditionally during init. It messages the Service Worker, which can mean a cold WASM start; a first run that is about to land on Guided Setup no longer pays that cost. Verified: zero dashboard fetches on first run, exactly one when remotes exist.
+
+### Verification
+Driven in real Chromium (Playwright) against `src/options.html` with the `chrome.*` APIs stubbed, since this is DOM behaviour the Node suite cannot reach:
+- empty config → lands on Guided Setup, Guided pane visible, **0** Service Worker fetches;
+- configured remote → lands on Dashboard, Dashboard pane visible, **1** fetch;
+- no page errors in either scenario;
+- the **Add your first cloud** button from the previous commit confirmed to route Dashboard → Guided Setup;
+- German first-run screen confirmed fully localized.
+
+**Note:** JS only — no locale, manifest or WASM changes. `node --check` clean, 23/23 unit tests passing.
