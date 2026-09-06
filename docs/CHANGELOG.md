@@ -953,3 +953,31 @@ Full edit round-trip driven in real Chromium against `src/options.html` with the
 17 assertions in real Chromium, both locales: three groups in the documented order, all 7 providers still selectable, the edit form's picker grouped too (it shares `populateProviderDropdown()`), notice hidden until a provider is chosen, correct category styling for each of the three kinds, the `rclone authorize` command provider-specific rather than hardcoded, no desktop step claimed for S3, German labels and notice fully translated with the command surviving substitution, no page errors. Items 2–4 regression suites re-run and still passing; unit suite 26/26.
 
 **Note:** No manifest or WASM changes. Locale parity 128/128.
+
+---
+
+## 2026-09-04 – Release 0.2.1
+
+First release since the Web Store listing went up on 2026-08-08. Everything below has been on `main` but not in users' hands.
+
+### First-run experience (Onboarding Plan phase 3)
+- The settings page now opens on a fresh install. Previously nothing visible happened after "Add to Chrome".
+- Guided Setup is the single route for adding a remote; the old "Add New Remote" nav entry is gone and that pane is now the edit form, reached from Manage Remotes.
+- The options page opens on Guided Setup when no remotes are configured, and on the Dashboard once they exist.
+- The provider picker is grouped by what setup actually costs — providers needing `rclone authorize` on a desktop computer are marked as such before you choose one, with the exact command shown.
+
+### Fixes
+- Dashboard was hardcoded English despite the strings already being translated; a German user's first screen was half English.
+- Dashboard empty state told users to "mount a remote in ChromeOS", a step that stopped existing when auto-mount landed. It now points at adding a cloud and offers a button.
+- Options page interpolated remote names and types into `innerHTML` unescaped. Not code execution (the extension CSP blocks inline handlers), but an imported config could deface the settings UI.
+
+### Documentation
+- README: Web Store install path, corrected clone URL, feature list matched to the actual UI.
+- `docs/TESTING.md` rewritten against current behaviour (it still described the April mock build).
+- `docs/ONBOARDING_PLAN.md` added, recording phase 3's decisions and two corrections found while implementing them.
+
+### Version bump rationale
+`VERSIONING.md` calls PATCH "bug fixes, performance optimizations, minor UI tweaks" and MINOR "significant UI improvements". This release removes a nav entry and restructures onboarding, which arguably meets the MINOR bar — `0.3.0` would be defensible. Shipped as `0.2.1` per the maintainer's call.
+
+### Build
+`test_builds/omnifiles-v0.2.1-<timestamp>.zip` (~13 MB, 23 files), verified by loading the unpacked artifact in Chromium: service worker boots, manifest reports 0.2.1, the rclone WASM bridge initialises, the settings page opens on install and lands on Guided Setup with the picker grouped.

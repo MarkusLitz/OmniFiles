@@ -42,7 +42,7 @@ Nothing has to be copied onto your Chromebook for this to work, and no browser t
 
 - **Chromebooks only.** OmniFiles plugs into the ChromeOS Files app, so it does nothing on Windows, macOS, or desktop Linux.
 - **Connecting an account takes one technical step, for now.** Google Drive, OneDrive, Dropbox and Google Photos each need a one-time authorisation performed on a desktop computer, then pasted in (see [Configuration](#configuration)). Services that use plain access keys, such as S3, skip this entirely. Turning the first kind into an ordinary one-click sign-in is a planned improvement — see the [roadmap](#roadmap).
-- **It's early software.** Version 0.2.0, published on the [Chrome Web Store](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo). Copying files *between* two connected clouds isn't supported yet — copy and move work within one drive at a time.
+- **It's early software.** Version 0.2.1, published on the [Chrome Web Store](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo). Copying files *between* two connected clouds isn't supported yet — copy and move work within one drive at a time.
 
 ---
 
@@ -76,8 +76,9 @@ Nothing has to be copied onto your Chromebook for this to work, and no browser t
 - Directory listings pre-populate the cache, so subsequent metadata requests resolve instantly
 
 ### 🔧 Configuration UI
-- **Guided Setup Wizard**: step-by-step configuration with schema-driven form fields
-- **Quick Add Wizard**: create remotes without manual INI editing
+- **Guided Setup Wizard**: the single route for adding a remote — step-by-step, with schema-driven form fields and no manual INI editing
+- **Provider picker grouped by setup effort**: providers are sorted by what they actually cost you, so the ones needing a one-time step on a desktop computer are marked as such *before* you pick one
+- **Edit form**: change an existing remote from Manage Remotes, with stored passwords revealed for editing
 - **Advanced Raw Editor**: paste/edit `rclone.conf` directly with INI syntax highlighting
 - **Import/Export**: download your config as a file or import an existing one
 - **Connection Test**: verify your remote works before saving
@@ -311,7 +312,7 @@ OmniFiles/
 
 ## Versioning
 
-This project follows [Semantic Versioning 2.0.0](https://semver.org/). The current version is **`0.2.0`**.
+This project follows [Semantic Versioning 2.0.0](https://semver.org/). The current version is **`0.2.1`**.
 
 The `version` field in `src/manifest.json` is the single source of truth.
 
