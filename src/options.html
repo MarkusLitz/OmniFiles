@@ -673,7 +673,9 @@
             <div class="sidebar-title">OmniFiles</div>
             <div class="nav-item active" data-target="tab-dashboard" data-i18n="nav_dashboard">Dashboard</div>
             <div class="nav-item" data-target="tab-manage" data-i18n="nav_manage">Manage Remotes</div>
-            <div class="nav-item" data-target="tab-wizard" data-i18n="nav_add">Add New Remote</div>
+            <!-- tab-wizard has no nav entry: it is the Edit form, reached from
+                 the Edit button in Manage Remotes. Guided Setup is the single
+                 route for *adding* a remote. -->
             <div class="nav-item" data-target="tab-guided" data-i18n="nav_guided">Guided Setup</div>
             <div class="nav-item" data-target="tab-advanced" data-i18n="nav_advanced">Advanced (Raw Config)</div>
             <div class="nav-item" data-target="tab-clipboard" data-i18n="nav_quickaccess">🔗 Quick Access</div>
@@ -703,10 +705,11 @@
             </div>
 
             <!-- Wizard Tab -->
+            <!-- Edit form. No nav entry — opened by editRemote() from Manage Remotes. -->
             <div id="tab-wizard" class="tab-content">
-                <h2 data-i18n="tab_wizard">Add New Remote</h2>
+                <h2 data-i18n="tab_edit">Edit Remote</h2>
                 <div class="description">
-                    <p data-i18n="wizard_desc">Create a new rclone configuration step-by-step.</p>
+                    <p data-i18n="edit_desc">Change the settings of an existing remote.</p>
                 </div>
                 
                 <div class="form-group">

@@ -416,11 +416,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector('[data-target="tab-manage"]').click();
         });
 
-        // Wizard Cancel
+        // Edit form Cancel. Resets the form and returns to Manage Remotes —
+        // the pane has no nav entry to fall back on, so leaving the user
+        // parked on a cleared edit form would be a dead end.
         wizardCancelBtn.addEventListener('click', () => {
             remoteTypeSelect.value = '';
             remoteNameInput.value = '';
             wizardFormContainer.style.display = 'none';
+            const manageTab = document.querySelector('[data-target="tab-manage"]');
+            if (manageTab) manageTab.click();
         });
     }
 
@@ -608,12 +612,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const remote = parsedConfig[name];
         if (!remote || !remote.type) return;
 
-        // Switch to wizard tab
+        // Show the edit form. It has no nav entry of its own — adding a remote
+        // goes through Guided Setup — so keep "Manage Remotes" highlighted,
+        // which is both where the user came from and where saving returns them.
         navItems.forEach(n => n.classList.remove('active'));
         tabContents.forEach(t => t.classList.remove('active'));
-        const wizardTabBtn = document.querySelector('[data-target="tab-wizard"]');
+        const manageTabBtn = document.querySelector('[data-target="tab-manage"]');
         const wizardTabContent = document.getElementById('tab-wizard');
-        if (wizardTabBtn) wizardTabBtn.classList.add('active');
+        if (manageTabBtn) manageTabBtn.classList.add('active');
         if (wizardTabContent) wizardTabContent.classList.add('active');
 
         // Fill in name and type

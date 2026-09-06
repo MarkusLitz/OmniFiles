@@ -904,3 +904,20 @@ Driven in real Chromium (Playwright) against `src/options.html` with the `chrome
 - German first-run screen confirmed fully localized.
 
 **Note:** JS only — no locale, manifest or WASM changes. `node --check` clean, 23/23 unit tests passing.
+
+---
+
+## 2026-09-04 – Session: Single Add-Flow (Onboarding Plan, item 3)
+
+### `src/options.html`, `src/options.js`, `src/_locales/*`
+- **Problem:** "Add New Remote" and "Guided Setup" were two nav entries for the same job — they even shared the `wizard_desc` description string — leaving a newcomer no basis to choose.
+- **Finding that changed the fix:** the plan called for deleting the "Add New Remote" tab outright. That would have broken editing. The `tab-wizard` pane is *also* the edit form: `editRemote()` reuses it, prefilling the selected remote's fields and revealing obscured passwords. Deleting it would have removed the only way to change an existing remote.
+- **Fix:** Removed the **nav entry** and kept the pane as an edit-only surface, reached from the Edit button in Manage Remotes. Guided Setup is now the single route for adding a remote.
+  - Heading changed from "Add New Remote" to "Edit Remote" (new `tab_edit` / `edit_desc` keys in both locales; the now-dead `tab_wizard` and `nav_add` keys removed). Parity holds at 122/122.
+  - `editRemote()` keeps **Manage Remotes** highlighted instead of the removed nav item — where the user came from, and where saving returns them — rather than leaving no nav entry active.
+  - Cancel now also returns to Manage Remotes. Previously it only cleared the form, which was fine while the pane had its own nav entry; without one it would have stranded the user on a blank form with no way back.
+
+### Verification
+Full edit round-trip driven in real Chromium against `src/options.html` with the `chrome.*` APIs stubbed — 14 assertions, all passing: no "Add New Remote" nav entry, Guided Setup still present, edit pane still in the DOM, Edit button opens it with name/type/token/other fields prefilled, Manage Remotes stays highlighted, heading reads "Edit Remote", Cancel returns to Manage Remotes, Guided Setup still reachable, no page errors. The item-2 landing-tab checks were re-run and still pass.
+
+**Note:** HTML/JS/locale only — no manifest or WASM changes. `node --check` clean, 23/23 unit tests passing.

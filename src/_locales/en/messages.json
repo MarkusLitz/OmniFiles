@@ -4,7 +4,6 @@
 
   "nav_dashboard":   { "message": "Dashboard" },
   "nav_manage":      { "message": "Manage Remotes" },
-  "nav_add":         { "message": "Add New Remote" },
   "nav_guided":      { "message": "Guided Setup" },
   "nav_advanced":    { "message": "Advanced (Raw Config)" },
   "nav_quickaccess": { "message": "🔗 Quick Access" },
@@ -42,7 +41,8 @@
     "placeholders": { "name": { "content": "$1" } }
   },
 
-  "tab_wizard":      { "message": "Add New Remote" },
+  "tab_edit":        { "message": "Edit Remote" },
+  "edit_desc":       { "message": "Change the settings of an existing remote." },
   "wizard_desc":     { "message": "Create a new OmniFiles configuration step-by-step." },
   "lbl_provider":    { "message": "Provider Type" },
   "opt_select_provider": { "message": "Select a provider..." },

@@ -105,6 +105,26 @@ in.
 routes to one outcome is worse than one good route, and collapsing them halves
 the surface that the future Connect button has to be threaded into.
 
+> **Correction (2026-09-04, during implementation).** Option (a) as written
+> above would have broken editing. The `tab-wizard` pane is not only the "Add
+> New Remote" form — `editRemote()` in `options.js` reuses it as the **edit**
+> form, populating it from the selected remote and revealing obscured
+> passwords. Deleting the pane would have removed the only way to change an
+> existing remote's settings.
+>
+> What was implemented instead, keeping the intent (one *add* route in the
+> nav): the **nav entry** was removed, and the pane was kept as an edit-only
+> surface reached from the Edit button in Manage Remotes. Its heading now reads
+> "Edit Remote" rather than "Add New Remote" (new `tab_edit` / `edit_desc`
+> keys; the now-dead `tab_wizard` and `nav_add` keys were dropped). Since the
+> pane no longer has a nav entry to highlight, `editRemote()` keeps **Manage
+> Remotes** active — where the user came from and where saving returns them —
+> and Cancel now returns there too, rather than leaving the user parked on a
+> cleared form with no way back.
+>
+> A flat form is also the better shape for editing: walking a 4-step stepper to
+> change one field would be worse than what exists today.
+
 ### 4. Conditional landing tab
 
 - No remotes configured → open **Guided Setup**.
@@ -148,8 +168,8 @@ Every item ships through Web Store review, so these should land as **one
 release**, not five.
 
 1. Dashboard i18n wiring + empty-state copy *(bugs — done 2026-09-04)*
-2. Conditional landing tab (decision 4)
-3. Collapse the duplicate add-flow (decision 3)
+2. Conditional landing tab (decision 4) *(done 2026-09-04)*
+3. Collapse the duplicate add-flow (decision 3) *(done 2026-09-04 — see the correction under decision 3)*
 4. `onInstalled` setup tab, gated on `'install'` (decision 1A)
 5. Provider picker with honest per-provider difficulty labels (decision 6c)
 6. *(follow-up release)* Toolbar `action` + popup (decision 1B)
