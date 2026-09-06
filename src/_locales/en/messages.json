@@ -16,11 +16,21 @@
   "tab_dashboard":   { "message": "Dashboard" },
   "dash_overview":   { "message": "Overview of active mounts and operations." },
   "dash_loading":    { "message": "Loading dashboard data..." },
-  "dash_no_mounts":  { "message": "No active mounts found. Mount a remote in ChromeOS to see it here." },
+  "dash_no_mounts":  { "message": "No clouds connected yet. Add one and it will appear in the Files app automatically." },
+  "dash_add_first":  { "message": "Add your first cloud" },
   "dash_storage":    { "message": "Storage:" },
   "dash_type":       { "message": "Type:" },
   "dash_uploads":    { "message": "Active Uploads:" },
   "dash_na":         { "message": "N/A" },
+  "dash_used_unlimited": {
+    "message": "$USED$ used (unlimited)",
+    "placeholders": { "used": { "content": "$1", "example": "4.21 GB" } }
+  },
+  "dash_error": {
+    "message": "Error: $DETAIL$",
+    "placeholders": { "detail": { "content": "$1", "example": "Service Worker inactive" } }
+  },
+  "dash_error_unknown": { "message": "Unknown error" },
 
   "tab_manage":      { "message": "Your Remotes" },
   "manage_desc":     { "message": "These remotes will be automatically mounted in the ChromeOS Files app." },

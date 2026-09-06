@@ -16,11 +16,21 @@
   "tab_dashboard":   { "message": "Dashboard" },
   "dash_overview":   { "message": "Übersicht der aktiven Mounts und Operationen." },
   "dash_loading":    { "message": "Dashboard-Daten werden geladen..." },
-  "dash_no_mounts":  { "message": "Keine aktiven Mounts gefunden. Binde einen Remote in ChromeOS ein, um ihn hier zu sehen." },
+  "dash_no_mounts":  { "message": "Noch keine Cloud verbunden. Füge eine hinzu — sie erscheint automatisch in der Files App." },
+  "dash_add_first":  { "message": "Ersten Cloud-Speicher hinzufügen" },
   "dash_storage":    { "message": "Speicher:" },
   "dash_type":       { "message": "Typ:" },
   "dash_uploads":    { "message": "Aktive Uploads:" },
   "dash_na":         { "message": "N/V" },
+  "dash_used_unlimited": {
+    "message": "$USED$ belegt (unbegrenzt)",
+    "placeholders": { "used": { "content": "$1", "example": "4,21 GB" } }
+  },
+  "dash_error": {
+    "message": "Fehler: $DETAIL$",
+    "placeholders": { "detail": { "content": "$1", "example": "Service Worker inaktiv" } }
+  },
+  "dash_error_unknown": { "message": "Unbekannter Fehler" },
 
   "tab_manage":      { "message": "Deine Remotes" },
   "manage_desc":     { "message": "Diese Remotes werden automatisch in der ChromeOS Files App eingebunden." },

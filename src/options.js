@@ -403,15 +403,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashboardGrid = document.getElementById('dashboardGrid');
         if (!dashboardGrid) return;
         
-        dashboardGrid.innerHTML = '<div class="empty-state">Loading dashboard data...</div>';
-        
+        dashboardGrid.innerHTML = `<div class="empty-state">${i18n('dash_loading')}</div>`;
+
         chrome.runtime.sendMessage({ action: 'getDashboardData' }, (response) => {
+            // The substitution is escaped, not the finished string: chrome.i18n
+            // does not escape substitutions, and the locale text around it is
+            // trusted, so escaping the whole result would mangle it instead.
             if (chrome.runtime.lastError) {
-                dashboardGrid.innerHTML = `<div class="empty-state error">Error: ${escapeHtml(chrome.runtime.lastError.message)}</div>`;
+                dashboardGrid.innerHTML = `<div class="empty-state error">${i18n('dash_error', escapeHtml(chrome.runtime.lastError.message))}</div>`;
             } else if (response && response.success) {
                 renderDashboard(response.data);
             } else {
-                dashboardGrid.innerHTML = `<div class="empty-state error">Error: ${escapeHtml(response ? response.error : 'Unknown error')}</div>`;
+                const detail = (response && response.error) || i18n('dash_error_unknown');
+                dashboardGrid.innerHTML = `<div class="empty-state error">${i18n('dash_error', escapeHtml(detail))}</div>`;
             }
         });
     }
@@ -423,7 +427,21 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardGrid.innerHTML = '';
         
         if (!data || data.length === 0) {
-            dashboardGrid.innerHTML = '<div class="empty-state">No active mounts found. Mount a remote in ChromeOS to see it here.</div>';
+            // Mounting is automatic once a remote is saved (see the
+            // chrome.storage.onChanged auto-mount listener in background.js),
+            // so the action this state should offer is "add a remote" — not
+            // "go mount something in ChromeOS", which is no longer a step.
+            dashboardGrid.innerHTML =
+                `<div class="empty-state">${i18n('dash_no_mounts')}` +
+                `<br><button type="button" id="dashAddRemoteBtn" class="btn btn-primary" style="margin-top:12px">` +
+                `${i18n('dash_add_first')}</button></div>`;
+            const addBtn = document.getElementById('dashAddRemoteBtn');
+            if (addBtn) {
+                addBtn.addEventListener('click', () => {
+                    const guidedTab = document.querySelector('[data-target="tab-guided"]');
+                    if (guidedTab) guidedTab.click();
+                });
+            }
             return;
         }
         
@@ -447,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pct = Math.round((used / total) * 100);
                 quotaHtml = `
                     <div class="info-row">
-                        <span class="info-label">Storage:</span>
+                        <span class="info-label">${i18n('dash_storage')}</span>
                         <span class="info-value">${formatBytes(used)} / ${formatBytes(total)} (${pct}%)</span>
                     </div>
                     <div class="progress-bar">
@@ -458,15 +476,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 // total=0 means unlimited (e.g. Google Workspace)
                 quotaHtml = `
                     <div class="info-row">
-                        <span class="info-label">Storage:</span>
-                        <span class="info-value">${formatBytes(item.quota.used)} used (unlimited)</span>
+                        <span class="info-label">${i18n('dash_storage')}</span>
+                        <span class="info-value">${i18n('dash_used_unlimited', formatBytes(item.quota.used))}</span>
                     </div>
                 `;
             } else {
                 quotaHtml = `
                     <div class="info-row">
-                        <span class="info-label">Storage:</span>
-                        <span class="info-value">N/A</span>
+                        <span class="info-label">${i18n('dash_storage')}</span>
+                        <span class="info-value">${i18n('dash_na')}</span>
                     </div>
                 `;
             }
@@ -478,12 +496,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="card-body">
                     <div class="info-row">
-                        <span class="info-label">Type:</span>
+                        <span class="info-label">${i18n('dash_type')}</span>
                         <span class="info-value">${escapeHtml(item.type)}</span>
                     </div>
                     ${quotaHtml}
                     <div class="info-row">
-                        <span class="info-label">Active Uploads:</span>
+                        <span class="info-label">${i18n('dash_uploads')}</span>
                         <span class="info-value">${escapeHtml(item.activeUploads)}</span>
                     </div>
                 </div>

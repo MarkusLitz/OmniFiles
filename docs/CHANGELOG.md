@@ -867,3 +867,21 @@ The working tree contained an unresolved Git conflict (`<<<<<<< HEAD` markers) b
 - **`docs/ROADMAP.md`:** Recorded that v0.2.0 passed Web Store review with `host_permissions: ["https://*/*"]` in place, so the wildcard is not a hard blocker for listing — the remaining case for narrowing it is user trust and re-review risk, not initial acceptance.
 
 **Note:** Documentation only — no source, manifest or WASM changes. Store listing verified live at v0.2.0 (published 2026-08-08) before updating.
+
+---
+
+## 2026-09-04 – Session: First-Run Planning & Dashboard Bug Fixes
+
+### Planning
+- **`docs/ONBOARDING_PLAN.md`** (new) – Phase 3 (first-run experience) plan. Traces the current cold-start path for a Web Store installer, records what is already built and must not be rebuilt (auto-mount, guided wizard, connection test, import/export), and lays out six decisions with the options considered and the one chosen: how the user reaches setup after install, welcome page vs. reusing the options page, collapsing the duplicate add-flows, a conditional landing tab, localizing first-run screens, and how the phase sequences against the OAuth work. States plainly that this phase cannot deliver non-technical onboarding on its own — the OAuth wall is what blocks that.
+
+### Dashboard localization (`src/options.js`, `src/_locales/*`)
+- **Problem:** The dashboard render path hardcoded English (`Storage:`, `Type:`, `Active Uploads:`, `Loading dashboard data...`, `N/A`, the error banner, the empty state) although every one of those strings already existed *and was translated* as `dash_storage`, `dash_type`, `dash_uploads`, `dash_loading`, `dash_na`, `dash_no_mounts`. The translations were never missing — `options.js` just never called `i18n()` for them. Since the dashboard is the landing tab, a German user's first screen was half English.
+- **Fix:** Wired the existing keys up. Added four that genuinely had none — `dash_error`, `dash_error_unknown`, `dash_used_unlimited`, `dash_add_first` — in both locales, preserving the files' hand-aligned grouping rather than reformatting them. Parity holds at 122/122.
+- **Escaping:** The error detail is escaped *before* substitution, not after: `chrome.i18n` does not escape substitutions, and the surrounding locale text is trusted, so escaping the finished string would mangle it. Verified a markup-bearing backend error still renders inert.
+
+### Misleading empty state (`src/options.js`, `src/_locales/*`)
+- **Problem:** `dash_no_mounts` read *"No active mounts found. Mount a remote in ChromeOS to see it here."* That advice stopped being true when the `chrome.storage.onChanged` auto-mount listener landed — saving a remote mounts it automatically, so there is no mounting step for the user to perform. The screen described an absence and named a step that no longer exists, while never mentioning the one thing that would help: adding a remote.
+- **Fix:** Reworded in both locales to say a connected cloud appears in the Files app automatically, and added an **Add your first cloud** button that opens the Guided Setup tab (using the existing `[data-target]` click idiom rather than introducing a tab-switch helper).
+
+**Note:** JS/locale only — no manifest or WASM changes. Verified: locale JSON parses, en/de parity, all 37 `i18n()` keys used in `options.js` are defined, no hardcoded strings left in the render path, `node --check` clean, 23/23 unit tests passing. Real-device check: open the options page with no remotes configured, in both English and German — the dashboard should be fully translated and offer the add button.
