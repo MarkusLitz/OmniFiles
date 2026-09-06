@@ -9,6 +9,16 @@
 </p>
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo"><img src="https://img.shields.io/badge/Chrome%20Web%20Store-Install-4285F4?logo=googlechrome&logoColor=white" alt="Install from the Chrome Web Store" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" /></a>
+  <img src="https://img.shields.io/badge/ChromeOS-105%2B-lightgrey?logo=googlechrome&logoColor=white" alt="Requires ChromeOS 105 or later" />
+</p>
+
+<p align="center">
+  <a href="#installation"><strong>Install from the Chrome Web Store →</strong></a>
+</p>
+
+<p align="center">
   <a href="#features">Features</a> •
   <a href="#supported-backends">Backends</a> •
   <a href="#installation">Installation</a> •
@@ -32,7 +42,7 @@ Nothing has to be copied onto your Chromebook for this to work, and no browser t
 
 - **Chromebooks only.** OmniFiles plugs into the ChromeOS Files app, so it does nothing on Windows, macOS, or desktop Linux.
 - **Connecting an account takes one technical step, for now.** Google Drive, OneDrive, Dropbox and Google Photos each need a one-time authorisation performed on a desktop computer, then pasted in (see [Configuration](#configuration)). Services that use plain access keys, such as S3, skip this entirely. Turning the first kind into an ordinary one-click sign-in is a planned improvement — see the [roadmap](#roadmap).
-- **It's early software.** Version 0.2.0, installed in developer mode rather than from the Chrome Web Store. Copying files *between* two connected clouds isn't supported yet — copy and move work within one drive at a time.
+- **It's early software.** Version 0.2.0, published on the [Chrome Web Store](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo). Copying files *between* two connected clouds isn't supported yet — copy and move work within one drive at a time.
 
 ---
 
@@ -114,7 +124,19 @@ S3-compatible providers (Wasabi, DigitalOcean Spaces, MinIO, Ceph, etc.) are sup
 
 ## Installation
 
+### From the Chrome Web Store (recommended)
+
+**[→ Install OmniFiles](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo)**
+
+1. Open the listing on your Chromebook and click **Add to Chrome**.
+2. Open the **ChromeOS Files app** → three-dot menu → **Add new service** → **OmniFiles**.
+3. Configure a remote — see [Configuration](#configuration).
+
+No developer mode and no manual build required. Updates arrive automatically.
+
 ### From Source (Developer Mode)
+
+For contributors, or to run a build with local changes:
 
 1. Clone this repository:
    ```bash
@@ -130,6 +152,10 @@ S3-compatible providers (Wasabi, DigitalOcean Spaces, MinIO, Ceph, etc.) are sup
 5. The extension should now be active. Open the **ChromeOS Files app** → three-dot menu → **Add new service** → select **OmniFiles**
 
 > **Important:** Select the `src/` folder specifically, not the project root.
+
+> A source install is a *separate* extension from the Web Store build, with its
+> own extension ID and its own `chrome.storage`. Running both at once mounts each
+> remote twice; disable one before testing the other.
 
 ---
 
@@ -371,6 +397,17 @@ The distributed extension bundles third-party code, primarily inside the compile
 - **rclone** (`rclone.wasm`) — MIT License, Copyright (C) 2012 Nick Craig-Wood. See [src/LICENSE-rclone.txt](src/LICENSE-rclone.txt).
 - **Go runtime, standard library & `wasm_exec.js`** — BSD-3-Clause License, Copyright (c) 2009 The Go Authors. See [src/LICENSE-go.txt](src/LICENSE-go.txt).
 - **Go modules statically linked into `rclone.wasm`** (AWS SDK, Google API clients, Dropbox SDK, `golang.org/x/*`, and others) — under Apache-2.0, BSD, MIT, ISC and related licenses. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for the inventory, full license texts, and how to regenerate the exact per-package manifest.
+
+---
+
+## Links
+
+| | |
+|---|---|
+| **Install** | [Chrome Web Store](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo) |
+| **Source** | [github.com/MarkusLitz/OmniFiles](https://github.com/MarkusLitz/OmniFiles) |
+| **Issues & feature requests** | [GitHub Issues](https://github.com/MarkusLitz/OmniFiles/issues) |
+| **Privacy** | [PRIVACY_POLICY.md](PRIVACY_POLICY.md) |
 
 ---
 

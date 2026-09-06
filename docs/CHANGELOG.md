@@ -859,3 +859,11 @@ The working tree contained an unresolved Git conflict (`<<<<<<< HEAD` markers) b
 - **Tests:** 5 new cases covering markup neutralisation, quote escaping for attribute contexts, ampersand-first ordering, non-string coercion, and ordinary values passing through unchanged. Suite is now 23/23.
 
 **Note:** JS/HTML only — no manifest permission changes and no WASM rebuild. `node --check` clean on all four extension scripts. Real-device check: import a config with a section name containing `<b>x</b>`, then open the Dashboard and Manage tabs — the tag should render as literal text, not as markup.
+
+---
+
+## 2026-09-04 – Session: Chrome Web Store Availability
+- **`README.md`:** OmniFiles is now published on the Chrome Web Store, so installation no longer requires developer mode. Added Web Store / license / ChromeOS-version badges and a direct install call-to-action to the header; restructured **Installation** so the Web Store path leads and the source build is kept as the contributor path, with a note that a source install is a separate extension ID from the Web Store build (running both mounts every remote twice). Corrected the "early software" bullet, which still claimed the extension was installed in developer mode rather than from the Web Store. Added a **Links** table (store listing, source, issues, privacy policy).
+- **`docs/ROADMAP.md`:** Recorded that v0.2.0 passed Web Store review with `host_permissions: ["https://*/*"]` in place, so the wildcard is not a hard blocker for listing — the remaining case for narrowing it is user trust and re-review risk, not initial acceptance.
+
+**Note:** Documentation only — no source, manifest or WASM changes. Store listing verified live at v0.2.0 (published 2026-08-08) before updating.

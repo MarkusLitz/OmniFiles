@@ -69,6 +69,7 @@ As of: 2026-07-29 · Consolidated roadmap & completed milestone tracking.
 
 ### 🛡️ Permission Scope Hardening (identified 2026-07-23)
 - **Problem:** `manifest.json` requests `host_permissions: ["https://*/*"]` — access to *every* HTTPS host. Because the WASM core does its own `fetch()` for arbitrary rclone remotes, a broad grant is functionally required, but a wildcard is the widest possible surface and can slow Chrome Web Store review / raise user-trust concerns.
+- **Data point (2026-09-04):** v0.2.0 passed Chrome Web Store review *with* the wildcard in place and is published. So the wildcard is not a hard blocker for listing; the remaining argument for narrowing is user trust and re-review risk on future submissions, not initial acceptance.
 - **Analysis:** The set of hosts actually contacted is bounded by the compiled-in backends (Google, Microsoft Graph, AWS/S3-compatible endpoints, Dropbox, etc.) — except for user-supplied S3/WebDAV/GCS endpoints, which are genuinely arbitrary and cannot be enumerated ahead of time.
 - **Solution:** For the fixed OAuth backends, narrow to the concrete API hostnames (e.g. `https://*.googleapis.com/*`, `https://graph.microsoft.com/*`, `https://api.dropboxapi.com/*`, `https://content.dropboxapi.com/*`). For user-defined endpoints, request access on demand via the `optional_host_permissions` + `chrome.permissions.request()` flow when the user saves a remote whose endpoint host isn't already granted. Keep `https://*/*` only as an optional fallback the user can opt into.
 
