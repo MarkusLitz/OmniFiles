@@ -173,6 +173,23 @@ Three ways to sequence against the OAuth work:
 **Chosen: (c).** It is honest with users, it is real progress, and settling the
 UI shape first de-risks the OAuth work.
 
+> **Implemented 2026-09-04.** Each provider in `config-schemas.js` now carries a
+> `setup` category — `"keys"`, `"desktop_oauth"` or `"overlay"` — and the picker
+> groups providers by it with `<optgroup>`, easiest first. Selecting one shows a
+> notice saying what it will require; for the desktop-OAuth providers that
+> includes the exact `rclone authorize <type>` command and a pointer back to the
+> first group for anyone without a second computer.
+>
+> `<optgroup>` was chosen over provider cards because it renders natively, needs
+> no layout work, and keeps the choice compact. It is also the slot decision 6(c)
+> called for: when a provider gains a real in-browser flow it moves to a new
+> `"oneclick"` category and the picker follows with no UI change.
+>
+> Worth being plain about the limit: this makes the wall **visible**, not lower.
+> There is still no provider a non-technical user can set up on a Chromebook
+> alone — S3 and GCS need credentials they are unlikely to have. Wall B is what
+> changes that.
+
 ---
 
 ## Sequencing
@@ -184,7 +201,7 @@ release**, not five.
 2. Conditional landing tab (decision 4) *(done 2026-09-04)*
 3. Collapse the duplicate add-flow (decision 3) *(done 2026-09-04 — see the correction under decision 3)*
 4. `onInstalled` setup tab, gated on `'install'` (decision 1A) *(done 2026-09-04)*
-5. Provider picker with honest per-provider difficulty labels (decision 6c)
+5. Provider picker with honest per-provider difficulty labels (decision 6c) *(done 2026-09-04)*
 6. *(follow-up release)* Toolbar `action` + popup (decision 1B)
 
 Items 1–5 are roughly one to two days of work.

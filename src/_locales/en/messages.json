@@ -53,6 +53,15 @@
   "btn_cancel":      { "message": "Cancel" },
 
   "tab_guided":      { "message": "Guided Setup" },
+  "setup_group_keys":    { "message": "Set up entirely here" },
+  "setup_group_desktop": { "message": "Needs a one-time step on a desktop computer" },
+  "setup_group_overlay": { "message": "Builds on a remote you already have" },
+  "setup_note_keys":     { "message": "You can set this up entirely on your Chromebook — paste in the access credentials and you are done." },
+  "setup_note_desktop": {
+    "message": "This provider needs a one-time authorisation you cannot do on a Chromebook. On a desktop computer with rclone installed, run \"$CMD$\", then paste the resulting token below. Without access to a second computer, pick a provider from the first group instead.",
+    "placeholders": { "cmd": { "content": "$1", "example": "rclone authorize drive" } }
+  },
+  "setup_note_overlay":  { "message": "This encrypts a remote you have already added, so set up that remote first." },
   "step1_label":     { "message": "1. Name & Type" },
   "step2_label":     { "message": "2. Credentials" },
   "step3_label":     { "message": "3. Options" },

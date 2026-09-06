@@ -665,6 +665,31 @@
             display: flex;
             justify-content: flex-end;
         }
+
+        /* Says what the chosen provider will require, under the picker in
+           Guided Setup. Colours come from the theme variables so it follows
+           dark mode with the rest of the page. */
+        .setup-notice {
+            display: block;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        /* Needs another computer — the one case worth flagging before the
+           user invests any steps. */
+        .setup-notice-desktop_oauth {
+            border-left-color: var(--danger-color, #ef4444);
+        }
+
+        .setup-notice-keys {
+            border-left-color: var(--success-color, #10b981);
+        }
     </style>
 </head>
 <body>
@@ -761,6 +786,9 @@
                             <select id="guidedRemoteType">
                                 <option value="" disabled selected data-i18n="opt_select_provider">Select a provider...</option>
                             </select>
+                            <!-- Filled by updateProviderSetupNotice() with what the
+                                 chosen provider will actually require. -->
+                            <span id="guidedSetupNotice" class="help-text setup-notice" hidden></span>
                         </div>
                     </div>
                     

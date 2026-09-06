@@ -4,11 +4,27 @@
 
 // config-schemas.js
 // Defines the fields required to configure various rclone providers in the GUI.
+//
+// `setup` says what the user must do before a provider will work at all. It
+// drives the grouping and the notice in the provider picker, so the cost is
+// visible *before* someone commits to a provider rather than after:
+//
+//   "keys"          – credentials can be pasted straight in (access keys, a
+//                     service-account JSON). No other device involved.
+//   "desktop_oauth" – needs `rclone authorize <type>` run on a desktop
+//                     computer, then the token JSON pasted in. This is the
+//                     wall for anyone without a second machine.
+//   "overlay"       – wraps a remote that already exists, so it cannot be the
+//                     first thing a user sets up.
+//
+// When a provider gains a real in-browser OAuth flow, it moves to a new
+// "oneclick" value and the picker follows automatically.
 
 const rcloneProviders = {
     drive: {
         name: "Google Drive",
         description: "Google Drive account",
+        setup: "desktop_oauth",
         fields: [
             { name: "client_id", label: "Client ID", type: "text", placeholder: "Leave blank normally" },
             { name: "client_secret", label: "Client Secret", type: "password", placeholder: "Leave blank normally" },
@@ -24,6 +40,7 @@ const rcloneProviders = {
     onedrive: {
         name: "Microsoft OneDrive",
         description: "Microsoft OneDrive Personal or Business",
+        setup: "desktop_oauth",
         fields: [
             { name: "client_id", label: "Client ID", type: "text", placeholder: "Leave blank normally" },
             { name: "client_secret", label: "Client Secret", type: "password", placeholder: "Leave blank normally" },
@@ -39,6 +56,7 @@ const rcloneProviders = {
     s3: {
         name: "Amazon S3 (or compatible)",
         description: "Amazon S3, Ceph, DigitalOcean Spaces, Minio, etc.",
+        setup: "keys",
         fields: [
             { name: "provider", label: "S3 Provider", type: "select", options: [
                 { value: "AWS", label: "Amazon Web Services (AWS) S3" },
@@ -61,6 +79,7 @@ const rcloneProviders = {
     dropbox: {
         name: "Dropbox",
         description: "Dropbox cloud storage",
+        setup: "desktop_oauth",
         fields: [
             { name: "client_id", label: "Client ID", type: "text", placeholder: "Leave blank normally" },
             { name: "client_secret", label: "Client Secret", type: "password", placeholder: "Leave blank normally" },
@@ -70,6 +89,7 @@ const rcloneProviders = {
     gcs: {
         name: "Google Cloud Storage",
         description: "Google Cloud Storage (GCS) - not Google Drive",
+        setup: "keys",
         fields: [
             { name: "project_number", label: "Project Number", type: "text", placeholder: "Optional" },
             { name: "service_account_credentials", label: "Service Account JSON", type: "textarea", placeholder: "Paste contents of your service account key file" },
@@ -82,6 +102,7 @@ const rcloneProviders = {
     googlephotos: {
         name: "Google Photos",
         description: "Google Photos API",
+        setup: "desktop_oauth",
         fields: [
             { name: "client_id", label: "Client ID", type: "text", placeholder: "Leave blank normally" },
             { name: "client_secret", label: "Client Secret", type: "password", placeholder: "Leave blank normally" },
@@ -91,6 +112,7 @@ const rcloneProviders = {
     crypt: {
         name: "Crypt (Encryption Overlay)",
         description: "Encrypts an existing remote or folder",
+        setup: "overlay",
         fields: [
             { name: "remote", label: "Remote to encrypt", type: "remote_select", placeholder: "Pick an existing remote" },
             { name: "filename_encryption", label: "Filename Encryption", type: "select", options: [

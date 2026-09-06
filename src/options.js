@@ -42,6 +42,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let parsedConfig = {}; // e.g. { mydrive: { type: 'drive', client_id: '...' } }
 
+    // Provider setup categories, easiest first. Grouping the picker by what a
+    // provider actually costs the user puts that cost in front of the choice
+    // instead of two steps after it — someone with no second computer can see
+    // that Google Drive is not an option for them before typing anything.
+    // 'overlay' sits last because it needs a remote that already exists, so it
+    // can never be a first setup.
+    //
+    // Declared up here, not next to populateProviderDropdown(): the init block
+    // below calls that function, and a `const` further down the file would
+    // still be in its temporal dead zone at that point.
+    const SETUP_ORDER = ['keys', 'desktop_oauth', 'overlay'];
+    const SETUP_GROUP_KEY = {
+        keys:          'setup_group_keys',
+        desktop_oauth: 'setup_group_desktop',
+        overlay:       'setup_group_overlay',
+    };
+
     // i18n helper (works in extension pages)
     const i18n = (key, ...subs) => chrome.i18n.getMessage(key, subs.length ? subs : undefined) || key;
 
@@ -305,6 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (guidedRemoteTypeSelect) {
             guidedRemoteTypeSelect.addEventListener('change', (e) => {
                 const providerKey = e.target.value;
+                updateProviderSetupNotice(providerKey);
                 if (providerKey) {
                     generateGuidedFields(providerKey);
                 }
@@ -351,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStepperUI();
                 guidedRemoteNameInput.value = '';
                 guidedRemoteTypeSelect.value = '';
+                updateProviderSetupNotice('');   // clear the notice with the form
                 document.querySelector('[data-target="tab-manage"]').click();
             });
         }
@@ -649,25 +668,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateProviderDropdown() {
         if (!window.rcloneProviders) return;
-        
-        Object.keys(window.rcloneProviders).forEach(key => {
-            const def = window.rcloneProviders[key];
-            const option = document.createElement('option');
-            option.value = key;
-            
-            if (def.unsupported) {
-                option.textContent = def.name + ' (Unsupported)';
-                option.style.color = '#70757a';
-            } else {
-                option.textContent = def.name;
-            }
-            
-            remoteTypeSelect.appendChild(option);
-            
-            if (guidedRemoteTypeSelect) {
-                guidedRemoteTypeSelect.appendChild(option.cloneNode(true));
-            }
+
+        const entries = Object.entries(window.rcloneProviders);
+        // Anything without a known category still has to appear, so it falls
+        // into the last group rather than silently vanishing from the picker.
+        const groupOf = def => (SETUP_ORDER.includes(def.setup) ? def.setup : SETUP_ORDER[SETUP_ORDER.length - 1]);
+
+        SETUP_ORDER.forEach(category => {
+            const inGroup = entries.filter(([, def]) => groupOf(def) === category);
+            if (inGroup.length === 0) return;
+
+            const buildGroup = () => {
+                const group = document.createElement('optgroup');
+                group.label = i18n(SETUP_GROUP_KEY[category]);
+                inGroup.forEach(([key, def]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    if (def.unsupported) {
+                        option.textContent = def.name + ' (Unsupported)';
+                        option.style.color = '#70757a';
+                    } else {
+                        option.textContent = def.name;
+                    }
+                    group.appendChild(option);
+                });
+                return group;
+            };
+
+            if (remoteTypeSelect) remoteTypeSelect.appendChild(buildGroup());
+            if (guidedRemoteTypeSelect) guidedRemoteTypeSelect.appendChild(buildGroup());
         });
+    }
+
+    /**
+     * Spells out what the selected provider will require, under the picker in
+     * Guided Setup. The group label says which category a provider is in; this
+     * says what that means in practice — including the exact `rclone authorize`
+     * command, so the desktop step is concrete rather than a vague warning.
+     */
+    function updateProviderSetupNotice(providerKey) {
+        const notice = document.getElementById('guidedSetupNotice');
+        if (!notice) return;
+
+        const def = providerKey && window.rcloneProviders ? window.rcloneProviders[providerKey] : null;
+        if (!def) {
+            notice.hidden = true;
+            notice.textContent = '';
+            return;
+        }
+
+        const category = SETUP_ORDER.includes(def.setup) ? def.setup : 'overlay';
+        let text;
+        if (category === 'desktop_oauth') {
+            text = i18n('setup_note_desktop', 'rclone authorize ' + providerKey);
+        } else if (category === 'keys') {
+            text = i18n('setup_note_keys');
+        } else {
+            text = i18n('setup_note_overlay');
+        }
+
+        notice.textContent = text;
+        notice.className = 'help-text setup-notice setup-notice-' + category;
+        notice.hidden = false;
     }
 
     // Guided Setup State

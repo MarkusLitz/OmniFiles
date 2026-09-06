@@ -53,6 +53,15 @@
   "btn_cancel":      { "message": "Abbrechen" },
 
   "tab_guided":      { "message": "Geführte Einrichtung" },
+  "setup_group_keys":    { "message": "Vollständig hier einrichtbar" },
+  "setup_group_desktop": { "message": "Einmaliger Schritt am Desktop-Rechner nötig" },
+  "setup_group_overlay": { "message": "Baut auf einem vorhandenen Remote auf" },
+  "setup_note_keys":     { "message": "Das kannst du komplett auf dem Chromebook einrichten — Zugangsdaten eintragen, fertig." },
+  "setup_note_desktop": {
+    "message": "Dieser Anbieter braucht eine einmalige Freigabe, die auf dem Chromebook nicht möglich ist. Führe auf einem Desktop-Rechner mit installiertem rclone \"$CMD$\" aus und füge den erzeugten Token unten ein. Ohne Zugang zu einem zweiten Rechner nimm besser einen Anbieter aus der ersten Gruppe.",
+    "placeholders": { "cmd": { "content": "$1", "example": "rclone authorize drive" } }
+  },
+  "setup_note_overlay":  { "message": "Das verschlüsselt ein bereits hinzugefügtes Remote — richte dieses also zuerst ein." },
   "step1_label":     { "message": "1. Name & Typ" },
   "step2_label":     { "message": "2. Zugangsdaten" },
   "step3_label":     { "message": "3. Optionen" },

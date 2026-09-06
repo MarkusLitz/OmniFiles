@@ -937,3 +937,19 @@ Full edit round-trip driven in real Chromium against `src/options.html` with the
 - Two earlier harness bugs worth recording: Playwright's `context.on('page')` does not fire for extension-opened pages in a persistent context (poll `context.pages()` instead), and the landing tab must be polled rather than sampled once, because it is decided after an async `chrome.storage` read.
 
 **Note:** JS only — no manifest, locale or WASM changes. `node --check` clean on both touched files.
+
+---
+
+## 2026-09-04 – Session: Provider Picker with Honest Setup Labels (Onboarding Plan, item 5)
+
+### `src/config-schemas.js`, `src/options.js`, `src/options.html`, `src/_locales/*`
+- **Problem:** The provider list was seven flat names. Nothing revealed that four of them (Google Drive, OneDrive, Dropbox, Google Photos) require `rclone authorize` on a desktop computer. A user without a second machine picked one, worked through two wizard steps, and only then hit a wall — the worst possible moment to learn it.
+- **Fix:** Each provider now declares a `setup` category in `config-schemas.js`: `"keys"` (credentials pasted straight in — S3, GCS), `"desktop_oauth"` (needs `rclone authorize` elsewhere — Drive, OneDrive, Dropbox, Google Photos), or `"overlay"` (wraps an existing remote — Crypt). The picker groups providers by category with `<optgroup>`, easiest first, and selecting one reveals a notice describing what it will demand — including the exact `rclone authorize <type>` command, and a pointer back to the first group for anyone without another computer.
+- **Why `<optgroup>` rather than provider cards:** it renders natively, needs no layout work, keeps the list compact, and is exactly the per-provider slot the plan's decision 6(c) asked for — when a provider gains a real in-browser OAuth flow it moves to a new `"oneclick"` category and the picker follows with no UI change.
+- **Bug caught during verification:** the category constants were first declared next to `populateProviderDropdown()`, far below the init block that calls it. `const` in its temporal dead zone made the function throw, and the picker rendered with zero options — the page silently lost its provider list. Moved the constants up beside the other state, with a comment recording why they live there.
+- Notice colours use the existing theme variables, so it follows dark mode. `.help-text` remains unstyled in this page (pre-existing); the notice carries its own `.setup-notice` styling.
+
+### Verification
+17 assertions in real Chromium, both locales: three groups in the documented order, all 7 providers still selectable, the edit form's picker grouped too (it shares `populateProviderDropdown()`), notice hidden until a provider is chosen, correct category styling for each of the three kinds, the `rclone authorize` command provider-specific rather than hardcoded, no desktop step claimed for S3, German labels and notice fully translated with the command surviving substitution, no page errors. Items 2–4 regression suites re-run and still passing; unit suite 26/26.
+
+**Note:** No manifest or WASM changes. Locale parity 128/128.
