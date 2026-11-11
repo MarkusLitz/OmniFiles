@@ -125,6 +125,10 @@
   "msg_name_type_req":  { "message": "Name and type are required." },
   "msg_invalid_name":   { "message": "Invalid remote name format." },
   "msg_name_req":       { "message": "Remote name is required." },
+  "msg_remote_exists": {
+    "message": "A remote named '$NAME$' already exists.",
+    "placeholders": { "name": { "content": "$1" } }
+  },
 
   "action_copy_link":     { "message": "🔗 Copy Link" },
   "action_copy_path":     { "message": "📋 Copy Path" },

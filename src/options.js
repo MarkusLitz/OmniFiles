@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // State
     let parsedConfig = {}; // e.g. { mydrive: { type: 'drive', client_id: '...' } }
+    let editingRemoteName = null; // original section name while editing an existing remote
 
     // Provider setup categories, easiest first. Grouping the picker by what a
     // provider actually costs the user puts that cost in front of the choice
@@ -236,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupEventListeners() {
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
+                editingRemoteName = null;
                 // Remove active class from all
                 navItems.forEach(n => n.classList.remove('active'));
                 tabContents.forEach(t => t.classList.remove('active'));
@@ -418,27 +420,45 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = remoteNameInput.value.trim();
             if (!name) { showStatus(i18n('msg_name_req'), 'error'); return; }
             if (!/^[a-zA-Z0-9_-]+$/.test(name)) { showStatus(i18n('msg_invalid_name'), 'error'); return; }
+            if (editingRemoteName && name !== editingRemoteName && Object.prototype.hasOwnProperty.call(parsedConfig, name)) {
+                showStatus(i18n('msg_remote_exists', name), 'error');
+                return;
+            }
 
             const type = remoteTypeSelect.value;
-            const newRemote = { type: type };
-
             const providerDef = window.rcloneProviders[type];
+
+            // Preserve any non-schema raw INI keys (e.g. drive_id on OneDrive)
+            // when the provider type stays the same, while deleting all schema
+            // fields first so optional fields cleared in the form are removed.
+            const newRemote = {};
+            const prevRemote = editingRemoteName ? parsedConfig[editingRemoteName] : null;
+            if (prevRemote && prevRemote.type === type) {
+                const schemaKeys = new Set(providerDef ? providerDef.fields.map(f => f.name) : []);
+                for (const [k, v] of Object.entries(prevRemote)) {
+                    if (k !== 'type' && !schemaKeys.has(k)) {
+                        newRemote[k] = v;
+                    }
+                }
+            }
+            newRemote.type = type;
+
             if (providerDef) {
                 Object.assign(newRemote, await collectFields('field_', providerDef));
             }
 
-            parsedConfig[name] = newRemote;
+            parsedConfig = renameRemoteInConfig(parsedConfig, editingRemoteName, name, newRemote);
             saveConfig(serializeINI(parsedConfig));
 
-            // Reset wizard and switch to manage tab
+            // Reset edit form and return to Manage Remotes
             wizardCancelBtn.click();
-            document.querySelector('[data-target="tab-manage"]').click();
         });
 
         // Edit form Cancel. Resets the form and returns to Manage Remotes —
         // the pane has no nav entry to fall back on, so leaving the user
         // parked on a cleared edit form would be a dead end.
         wizardCancelBtn.addEventListener('click', () => {
+            editingRemoteName = null;
             remoteTypeSelect.value = '';
             remoteNameInput.value = '';
             wizardFormContainer.style.display = 'none';
@@ -631,6 +651,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const remote = parsedConfig[name];
         if (!remote || !remote.type) return;
 
+        editingRemoteName = name;
+
         // Show the edit form. It has no nav entry of its own — adding a remote
         // goes through Guided Setup — so keep "Manage Remotes" highlighted,
         // which is both where the user came from and where saving returns them.
@@ -655,15 +677,19 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
         // Fill in fields, revealing obscured passwords
-        setTimeout(async () => {
-            for (const [key, value] of Object.entries(remote)) {
-                if (key === 'type') continue;
-                const input = document.getElementById('field_' + key);
-                if (input) {
-                    input.value = obscureFields.has(key) ? await rcloneReveal(value) : value;
-                }
+        for (const [key, value] of Object.entries(remote)) {
+            if (key === 'type') continue;
+            const input = document.getElementById('field_' + key);
+            if (!input) continue;
+            const plainVal = obscureFields.has(key) ? await rcloneReveal(value) : value;
+            if (input.tagName === 'SELECT' && ![...input.options].some(o => o.value === plainVal)) {
+                const customOpt = document.createElement('option');
+                customOpt.value = plainVal;
+                customOpt.textContent = plainVal;
+                input.appendChild(customOpt);
             }
-        }, 50);
+            input.value = plainVal;
+        }
     }
 
     function populateProviderDropdown() {
@@ -802,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } else if (field.type === 'remote_select') {
                 input = document.createElement('select');
-                const remoteNames = Object.keys(parsedConfig);
+                const remoteNames = Object.keys(parsedConfig).filter(n => n !== editingRemoteName);
                 if (remoteNames.length === 0) {
                     const option = document.createElement('option');
                     option.value = "";
@@ -882,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } else if (field.type === 'remote_select') {
                 input = document.createElement('select');
-                const remoteNames = Object.keys(parsedConfig);
+                const remoteNames = Object.keys(parsedConfig).filter(n => n !== editingRemoteName);
                 if (remoteNames.length === 0) {
                     const option = document.createElement('option');
                     option.value = "";

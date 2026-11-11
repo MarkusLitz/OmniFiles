@@ -13,6 +13,8 @@ const {
     isAuthError,
     escapeHtml,
     shouldOpenSetupPage,
+    diffRemoteConfigs,
+    renameRemoteInConfig,
 } = require('../src/config-utils.js');
 
 // ── parseIniConfig ──────────────────────────────────────────────────────
@@ -198,4 +200,76 @@ test('shouldOpenSetupPage tolerates a missing or malformed details object', () =
     assert.strictEqual(shouldOpenSetupPage(null), false);
     assert.strictEqual(shouldOpenSetupPage({}), false);
     assert.strictEqual(shouldOpenSetupPage({ reason: '' }), false);
+});
+
+// ── diffRemoteConfigs ───────────────────────────────────────────────────
+
+test('diffRemoteConfigs classifies added, removed, modified and unchanged remotes', () => {
+    const oldConf = {
+        keep: { type: 's3', region: 'eu-central-1' },
+        edit: { type: 'drive', token: 'old', team_drive: 'td1' },
+        drop: { type: 'dropbox', token: 'x' },
+    };
+    const newConf = {
+        keep: { type: 's3', region: 'eu-central-1' },
+        edit: { type: 'drive', token: 'new' }, // value changed + key removed
+        fresh: { type: 'webdav', url: 'https://cloud.example.com' },
+    };
+    assert.deepStrictEqual(diffRemoteConfigs(oldConf, newConf), {
+        added: ['fresh'],
+        removed: ['drop'],
+        modified: ['edit'],
+        unchanged: ['keep'],
+    });
+});
+
+test('diffRemoteConfigs catches extra mounted remotes even when oldConf is empty', () => {
+    // Simulates deleting the last remote right after a Service Worker restart
+    const diff = diffRemoteConfigs({}, {}, ['staleMount', 'staleMount', 'anotherMount']);
+    assert.deepStrictEqual(diff, {
+        added: [],
+        removed: ['staleMount', 'anotherMount'],
+        modified: [],
+        unchanged: [],
+    });
+});
+
+test('diffRemoteConfigs detects key removal when remaining keys match', () => {
+    const oldConf = { r: { type: 'drive', token: 't', team_drive: 'abc' } };
+    const newConf = { r: { type: 'drive', token: 't' } };
+    assert.deepStrictEqual(diffRemoteConfigs(oldConf, newConf).modified, ['r']);
+});
+
+// ── renameRemoteInConfig ────────────────────────────────────────────────
+
+test('renameRemoteInConfig replaces old section in-place and removes duplicate', () => {
+    const orig = {
+        first: { type: 's3' },
+        oldname: { type: 'drive', token: 't1' },
+        last: { type: 'webdav' },
+    };
+    const next = renameRemoteInConfig(orig, 'oldname', 'newname', { type: 'drive', token: 't2' });
+    assert.deepStrictEqual(Object.keys(next), ['first', 'newname', 'last']);
+    assert.strictEqual(next.oldname, undefined);
+    assert.deepStrictEqual(next.newname, { type: 'drive', token: 't2' });
+});
+
+test('renameRemoteInConfig updates dependent crypt overlay references on rename', () => {
+    const orig = {
+        gdrive: { type: 'drive', token: 't' },
+        encRoot: { type: 'crypt', remote: 'gdrive:', password: 'p' },
+        encSub: { type: 'crypt', remote: 'gdrive:vault/sub', password: 'p' },
+        encOther: { type: 'crypt', remote: 'gdrive2:vault', password: 'p' },
+    };
+    const next = renameRemoteInConfig(orig, 'gdrive', 'workdrive', { type: 'drive', token: 't' });
+    assert.strictEqual(next.encRoot.remote, 'workdrive:');
+    assert.strictEqual(next.encSub.remote, 'workdrive:vault/sub');
+    // Must not touch gdrive2: (prefix boundary is colon)
+    assert.strictEqual(next.encOther.remote, 'gdrive2:vault');
+});
+
+test('renameRemoteInConfig updates in place when name is unchanged', () => {
+    const orig = { gdrive: { type: 'drive', token: 'old' } };
+    const next = renameRemoteInConfig(orig, 'gdrive', 'gdrive', { type: 'drive', token: 'new' });
+    assert.deepStrictEqual(next, { gdrive: { type: 'drive', token: 'new' } });
 });

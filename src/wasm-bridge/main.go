@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/rclone/rclone/fs"
+	"github.com/rclone/rclone/fs/cache"
 	"github.com/rclone/rclone/fs/config"
 	"github.com/rclone/rclone/fs/operations"
 	"github.com/rclone/rclone/fs/rc"
@@ -143,6 +144,10 @@ func rcCallback(this js.Value, args []js.Value) interface{} {
 // in-memory config storage. This bypasses the interactive config/create
 // flow which tries to start an OAuth server and deadlocks in WASM.
 //
+// Replacing a section deletes any previously stored keys that are absent from
+// params (e.g. optional fields cleared in the UI) and evicts cached Fs entries
+// for the remote whenever its configuration actually changed.
+//
 // Usage from JS: self.configInject("remoteName", { type: "drive", token: "...", ... })
 func configInjectCallback(this js.Value, args []js.Value) interface{} {
 	if len(args) != 2 {
@@ -160,24 +165,78 @@ func configInjectCallback(this js.Value, args []js.Value) interface{} {
 		})
 	}
 
-	// Get the keys of the JS object
+	// Collect incoming key-value pairs from the JS object
 	keys := js.Global().Get("Object").Call("keys", params)
 	keyCount := keys.Length()
-
-	log.Printf("configInject: injecting %d keys for remote %q", keyCount, name)
-
+	incoming := make(map[string]string, keyCount)
 	for i := 0; i < keyCount; i++ {
 		key := keys.Index(i).String()
-		value := params.Get(key).String()
-		config.FileSetValue(name, key, value)
+		incoming[key] = params.Get(key).String()
+	}
+
+	store := config.LoadedData()
+	existed := store.HasSection(name)
+	changed := !existed || len(store.GetKeyList(name)) != len(incoming)
+	if !changed {
+		for k, v := range incoming {
+			if oldVal, ok := store.GetValue(name, k); !ok || oldVal != v {
+				changed = true
+				break
+			}
+		}
+	}
+
+	log.Printf("configInject: injecting %d keys for remote %q (changed=%v)", keyCount, name, changed)
+
+	if changed {
+		// Wipe existing keys first so cleared optional fields do not linger in memory
+		if existed {
+			store.DeleteSection(name)
+		}
+		for k, v := range incoming {
+			config.FileSetValue(name, k, v)
+		}
+		if existed {
+			cache.ClearConfig(name)
+		}
 	}
 
 	log.Printf("configInject: remote %q configured successfully", name)
 
 	return js.ValueOf(map[string]interface{}{
-		"status": "ok",
-		"name":   name,
-		"keys":   keyCount,
+		"status":  "ok",
+		"name":    name,
+		"keys":    keyCount,
+		"changed": changed,
+	})
+}
+
+// configDeleteCallback removes a remote section from rclone's in-memory config
+// storage and evicts any cached Fs instances for it. Unlike the config/delete
+// RC command, this avoids SaveConfig() which attempts disk I/O in WASM.
+//
+// Usage from JS: self.configDelete("remoteName")
+func configDeleteCallback(this js.Value, args []js.Value) interface{} {
+	if len(args) != 1 {
+		return js.ValueOf(map[string]interface{}{
+			"error": "configDelete needs exactly 1 argument: name (string)",
+		})
+	}
+
+	name := args[0].String()
+	store := config.LoadedData()
+	existed := store.HasSection(name)
+	if existed {
+		store.DeleteSection(name)
+	}
+	cache.ClearConfig(name)
+
+	log.Printf("configDelete: remote %q removed (existed=%v)", name, existed)
+
+	return js.ValueOf(map[string]interface{}{
+		"status":  "ok",
+		"name":    name,
+		"deleted": existed,
 	})
 }
 
@@ -545,6 +604,9 @@ func main() {
 
 	// Set configInject function - direct in-memory config writing (no OAuth)
 	global.Set("configInject", js.FuncOf(configInjectCallback))
+
+	// Set configDelete function - removes a remote section and clears its cached Fs
+	global.Set("configDelete", js.FuncOf(configDeleteCallback))
 
 	// Set fileRead function - ranged binary reads from remote files
 	global.Set("fileRead", js.FuncOf(fileReadCallback))

@@ -111,10 +111,11 @@ function notifyAuthExpired(remoteName, err) {
     });
 }
 
-// Called when a remote works again (health check succeeded): reset the
-// throttle and remove a possibly still-visible re-auth notification.
+// Called when a remote works again, is edited, or is removed: reset the
+// throttle and remove a possibly still-visible re-auth notification (even if
+// it was created in an earlier Service Worker lifecycle).
 function clearAuthExpired(remoteName) {
-    if (!lastAuthNotify.has(remoteName)) return;
+    if (!remoteName) return;
     lastAuthNotify.delete(remoteName);
     chrome.notifications.clear(AUTH_NOTIF_PREFIX + remoteName);
 }
@@ -273,7 +274,7 @@ async function configureRclone(force = false) {
             if (chrome.runtime.lastError) {
                 return reject(chrome.runtime.lastError);
             }
-            if (!result.rcloneConf) {
+            if (!result.rcloneConf && !force) {
                 return reject(new Error("No OmniFiles configuration found. Please configure it in the extension options."));
             }
             
@@ -281,19 +282,31 @@ async function configureRclone(force = false) {
             self.rcValid.then(async () => {
                 try {
                     console.log("[Rclone] Injecting config into memory...");
-                    const parsedConf = parseIniConfig(result.rcloneConf);
+                    const parsedConf = parseIniConfig(result.rcloneConf || '');
+
+                    // Sanitize tokens up front so liveConfigCache matches what WASM holds
+                    for (const [remoteName, remoteConfig] of Object.entries(parsedConf)) {
+                        if (remoteConfig.token) {
+                            remoteConfig.token = sanitizeTokenValue(remoteConfig.token);
+                            console.log(`[Rclone] Token sanitized for ${remoteName}`);
+                        }
+                    }
+
+                    // Purge any previously injected remotes that were deleted or renamed
+                    if (typeof self.configDelete === 'function') {
+                        for (const prevRemote of configuredRemotes) {
+                            if (!Object.prototype.hasOwnProperty.call(parsedConf, prevRemote)) {
+                                self.configDelete(prevRemote);
+                            }
+                        }
+                    }
+
                     // Mirror what's about to be injected so onConfigChanged can tell
                     // real changes apart from this routine re-assertion (see definition above).
                     liveConfigCache = parsedConf;
 
                     for (const [remoteName, remoteConfig] of Object.entries(parsedConf)) {
                         console.log(`[Rclone] Injecting remote config: ${remoteName}`);
-
-                        // Sanitize token JSON if present (fixes copy-paste corruption)
-                        if (remoteConfig.token) {
-                            remoteConfig.token = sanitizeTokenValue(remoteConfig.token);
-                            console.log(`[Rclone] Token sanitized for ${remoteName}`);
-                        }
 
                         // Use configInject instead of config/create to avoid OAuth deadlock in WASM
                         const res = self.configInject(remoteName, remoteConfig);
@@ -340,6 +353,11 @@ function updateMountedFileSystems(mutate) {
     }));
     return mountsUpdateQueue;
 }
+
+// Assigned inside the chrome.fileSystemProvider block so top-level storage
+// listeners can evict L1/L2 metadata & virtual-file caches for removed or
+// edited remotes without breaking in non-ChromeOS test environments.
+let purgeRemoteCaches = () => {};
 
 if (chrome.fileSystemProvider) {
     console.log('[Rclone] FileSystemProvider API available.');
@@ -557,6 +575,43 @@ if (chrome.fileSystemProvider) {
         statCache.delete('__listing__:' + key2);
         idbCacheDelete('__listing__:' + key2);
     }
+
+    // Purges all L1 (RAM), L2 (IndexedDB), and virtual-file entries belonging
+    // to `remoteName` when a remote is deleted, renamed, or reconfigured.
+    purgeRemoteCaches = function (remoteName) {
+        if (!remoteName) return;
+        const statPrefix = remoteName + ':';
+        const listPrefix = '__listing__:' + statPrefix;
+
+        for (const key of statCache.keys()) {
+            if (key.startsWith(statPrefix) || key.startsWith(listPrefix)) {
+                statCache.delete(key);
+            }
+        }
+        if (typeof virtualFiles !== 'undefined') {
+            for (const key of virtualFiles.keys()) {
+                if (key.startsWith(statPrefix)) {
+                    virtualFiles.delete(key);
+                }
+            }
+        }
+
+        idbOpen().then(db => {
+            const tx = db.transaction(IDB_STORE, 'readwrite');
+            const store = tx.objectStore(IDB_STORE);
+            const req = store.openCursor();
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (!cursor) return;
+                const k = String(cursor.key || '');
+                if (k.startsWith(statPrefix) || k.startsWith(listPrefix)) {
+                    cursor.delete();
+                }
+                cursor.continue();
+            };
+            req.onerror = (e) => console.warn('[Rclone][IDB] remote purge cursor error:', e.target.error);
+        }).catch(err => console.warn('[Rclone][IDB] remote purge open error:', err));
+    };
 
     // Returns a valid Date, falling back to now if the input is missing or unparseable
     function safeDate(modTime) {
@@ -1975,41 +2030,130 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
 });
 
-// Auto-mount new remotes when rcloneConf changes (e.g. after wizard/advanced save).
-// Already-mounted remotes get "Already mounted" which is silently ignored.
+// Sync mounts, caches, and WASM state whenever rcloneConf changes
+// (e.g. after Guided Setup, Edit Remote, Delete, or Raw Config save).
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local' || !changes.rcloneConf) return;
-    console.log('[Rclone] Config changed — re-injecting and checking for new remotes to mount...');
-    self.rcValid.then(() => {
-        // force: the stored config just changed, so the memoised injection is
-        // stale by definition. Without this the call short-circuits, the core
-        // keeps serving the old config, and the loop below iterates a stale
-        // remote list — so a newly added remote is neither injected nor mounted
-        // until the worker restarts or the 15 min health check re-injects it.
-        configureRclone(true).then(remotes => {
-            remotes.forEach(remoteName => {
-                chrome.fileSystemProvider.mount({
-                    fileSystemId: remoteName,
-                    displayName: `OmniFiles (${remoteName})`,
-                    writable: true
-                }, () => {
-                    if (chrome.runtime.lastError) {
-                        const msg = chrome.runtime.lastError.message;
-                        if (!msg.includes('Already mounted')) {
-                            console.error(`[Rclone] Auto-mount failed for ${remoteName}:`, msg);
-                        }
-                    } else {
-                        console.log(`[Rclone] Auto-mounted new remote: ${remoteName}`);
-                        updateMountedFileSystems((mounts) => {
-                            if (!mounts.find(m => m.id === remoteName)) {
-                                mounts.push({ id: remoteName, name: `OmniFiles (${remoteName})`, remote: remoteName + ':' });
+    console.log('[Rclone] Config changed — syncing WASM state and mounts...');
+
+    const oldConf = parseIniConfig(changes.rcloneConf.oldValue || '');
+    const newConf = parseIniConfig(changes.rcloneConf.newValue || '');
+
+    self.rcValid.then(async () => {
+        try {
+            // Gather every remote ID still tracked in storage or mounted in FSP
+            // so removals are caught even if the Service Worker just restarted.
+            const storageSnap = await new Promise((resolve) => {
+                chrome.storage.local.get({ mountedFileSystems: [], remoteStatus: {} }, resolve);
+            });
+            const fspMountedIds = (chrome.fileSystemProvider && chrome.fileSystemProvider.getAll)
+                ? await new Promise((resolve) => {
+                    chrome.fileSystemProvider.getAll((list) => {
+                        if (chrome.runtime.lastError || !Array.isArray(list)) return resolve([]);
+                        resolve(list.map(fs => fs.fileSystemId));
+                    });
+                })
+                : [];
+
+            const extraKnown = new Set([
+                ...configuredRemotes,
+                ...(storageSnap.mountedFileSystems || []).map(m => m.id),
+                ...Object.keys(storageSnap.remoteStatus || {}),
+                ...fspMountedIds,
+            ]);
+
+            const { removed, modified } = diffRemoteConfigs(oldConf, newConf, extraKnown);
+
+            // force: the stored config just changed, so the memoised injection is stale.
+            const remotes = await configureRclone(true);
+
+            // Ensure removed sections are purged from WASM even if configuredRemotes
+            // was empty after a Service Worker restart.
+            if (typeof self.configDelete === 'function') {
+                for (const removedName of removed) {
+                    self.configDelete(removedName);
+                }
+            }
+
+            // Unmount removed remotes and clean up their caches & notifications
+            if (removed.length > 0) {
+                const removedSet = new Set(removed);
+                for (const removedName of removed) {
+                    purgeRemoteCaches(removedName);
+                    clearAuthExpired(removedName);
+                    if (chrome.fileSystemProvider) {
+                        chrome.fileSystemProvider.unmount({ fileSystemId: removedName }, () => {
+                            if (chrome.runtime.lastError) {
+                                const errMsg = chrome.runtime.lastError.message || '';
+                                if (!errMsg.includes('NOT_FOUND')) {
+                                    console.warn(`[Rclone] Unmount warning for removed remote ${removedName}:`, errMsg);
+                                }
+                            } else {
+                                console.log(`[Rclone] Unmounted removed remote: ${removedName}`);
                             }
-                            return mounts;
                         });
                     }
+                }
+                await updateMountedFileSystems((mounts) => mounts.filter(m => !removedSet.has(m.id)));
+            }
+
+            // Purge stale metadata/listing caches & expired-auth flags for edited remotes
+            for (const modifiedName of modified) {
+                purgeRemoteCaches(modifiedName);
+                clearAuthExpired(modifiedName);
+            }
+
+            // Prune removed remotes (and reset modified auth_expired entries) in remoteStatus
+            if (removed.length > 0 || modified.length > 0) {
+                chrome.storage.local.get({ remoteStatus: {} }, (res) => {
+                    const nextStatus = { ...(res.remoteStatus || {}) };
+                    let statusChanged = false;
+                    for (const removedName of removed) {
+                        if (Object.prototype.hasOwnProperty.call(nextStatus, removedName)) {
+                            delete nextStatus[removedName];
+                            statusChanged = true;
+                        }
+                    }
+                    for (const modifiedName of modified) {
+                        if (nextStatus[modifiedName] && nextStatus[modifiedName].status === 'auth_expired') {
+                            delete nextStatus[modifiedName];
+                            statusChanged = true;
+                        }
+                    }
+                    if (statusChanged) {
+                        chrome.storage.local.set({ remoteStatus: nextStatus });
+                    }
                 });
-            });
-        }).catch(err => console.error('[Rclone] Auto-mount configureRclone failed:', err));
+            }
+
+            // Mount new/current remotes (already-mounted ones return "Already mounted")
+            if (chrome.fileSystemProvider) {
+                remotes.forEach(remoteName => {
+                    chrome.fileSystemProvider.mount({
+                        fileSystemId: remoteName,
+                        displayName: `OmniFiles (${remoteName})`,
+                        writable: true
+                    }, () => {
+                        if (chrome.runtime.lastError) {
+                            const msg = chrome.runtime.lastError.message;
+                            if (!msg.includes('Already mounted')) {
+                                console.error(`[Rclone] Auto-mount failed for ${remoteName}:`, msg);
+                            }
+                        } else {
+                            console.log(`[Rclone] Auto-mounted new remote: ${remoteName}`);
+                            updateMountedFileSystems((mounts) => {
+                                if (!mounts.find(m => m.id === remoteName)) {
+                                    mounts.push({ id: remoteName, name: `OmniFiles (${remoteName})`, remote: remoteName + ':' });
+                                }
+                                return mounts;
+                            });
+                        }
+                    });
+                });
+            }
+        } catch (err) {
+            console.error('[Rclone] Config sync failed:', err);
+        }
     });
 });
 
@@ -2029,23 +2173,30 @@ async function checkAllRemotes() {
         await self.rcValid;
         
         chrome.storage.local.get(['rcloneConf', 'remoteStatus'], async (result) => {
-            if (!result.rcloneConf) return;
+            if (!result.rcloneConf) {
+                if (result.remoteStatus && Object.keys(result.remoteStatus).length > 0) {
+                    chrome.storage.local.set({ remoteStatus: {} });
+                }
+                return;
+            }
             
             const parsedConf = parseIniConfig(result.rcloneConf);
+            for (const remoteConfig of Object.values(parsedConf)) {
+                if (remoteConfig.token) {
+                    remoteConfig.token = sanitizeTokenValue(remoteConfig.token);
+                }
+            }
             // Mirror what's about to be re-injected (see onConfigChanged definition above) —
             // keeps the periodic re-check from flooding chrome.storage with no-op writes.
             liveConfigCache = parsedConf;
             const remotes = Object.keys(parsedConf);
-            const statusObj = result.remoteStatus || {};
+            const nextStatusObj = {};
 
             for (const remote of remotes) {
                 const config = parsedConf[remote];
                 if (!config.type) continue;
                 
                 try {
-                    if (config.token) {
-                        config.token = sanitizeTokenValue(config.token);
-                    }
                     self.configInject(remote, config);
                     
                     // Test connection by listing root with limit 1
@@ -2055,7 +2206,7 @@ async function checkAllRemotes() {
                         opt: { limit: 1 }
                     });
                     
-                    statusObj[remote] = {
+                    nextStatusObj[remote] = {
                         status: 'online',
                         timestamp: Date.now()
                     };
@@ -2063,7 +2214,7 @@ async function checkAllRemotes() {
                     clearAuthExpired(remote);
                 } catch (e) {
                     console.warn(`[Rclone] Check failed for ${remote}:`, e);
-                    statusObj[remote] = {
+                    nextStatusObj[remote] = {
                         // auth_expired = refresh token dead, user must re-authorize;
                         // the notification itself is fired by the wrapped self.rc()
                         status: isAuthError(e) ? 'auth_expired' : 'offline',
@@ -2073,7 +2224,7 @@ async function checkAllRemotes() {
                 }
             }
             
-            chrome.storage.local.set({ remoteStatus: statusObj });
+            chrome.storage.local.set({ remoteStatus: nextStatusObj });
         });
     } catch (err) {
         console.error('[Rclone] checkAllRemotes error:', err);

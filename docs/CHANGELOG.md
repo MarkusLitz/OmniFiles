@@ -996,9 +996,14 @@ First release since the Web Store listing went up on 2026-08-08. Everything belo
 
 ---
 
-## 2026-11-11 – Session: WASM Bridge `js.FuncOf` Memory Leak Fix
+## 2026-11-11 – Session: WASM Bridge `js.FuncOf` Leak Fix & Remote Lifecycle Cleanup
 
 ### WASM Bridge (`src/wasm-bridge/main.go`, `src/rclone.wasm`)
-- **Bug Fix:** Added `defer handler.Release()` immediately before `Promise.New(handler)` in `rcCallback`, `fileReadCallback`, `fileWriteCallback`, and `fileWriteStreamCallback`. Previously, each Promise executor wrapper stayed permanently registered in Go's global `syscall/js` callback table (pinning its captured JS argument references) for the lifetime of the Service Worker.
-- **Build & Verification:** Rebuilt `src/rclone.wasm` via `./build-wasm.sh` and verified all four callbacks end-to-end against rclone's `memory` backend alongside all 26 Node unit tests.
+- **Bug Fix (`js.FuncOf` leak):** Added `defer handler.Release()` immediately before `Promise.New(handler)` in `rcCallback`, `fileReadCallback`, `fileWriteCallback`, and `fileWriteStreamCallback`. Previously, each Promise executor wrapper stayed permanently registered in Go's global `syscall/js` callback table (pinning its captured JS argument references) for the lifetime of the Service Worker.
+- **Config Section Replacement & Deletion:** Updated `configInjectCallback` to detect key/value diffs, clear stale keys via `DeleteSection` when optional fields are removed, and evict stale `fs/cache` entries (`cache.ClearConfig`) only when a remote's config actually changed. Added `configDeleteCallback` (`self.configDelete`) to purge deleted/renamed remotes from in-memory config and `fs/cache` without triggering disk I/O (`SaveConfig`).
+
+### Service Worker & Options UI (`src/background.js`, `src/options.js`, `src/config-utils.js`, `tests/config-utils.test.js`)
+- **Unmount & Cache Cleanup on Delete/Edit:** Updated `chrome.storage.onChanged` and `configureRclone(true)` to diff old vs. new configs (including mounted FSP volumes across Service Worker restarts) via `diffRemoteConfigs`, unmounting deleted remotes, pruning `mountedFileSystems` and `remoteStatus`, clearing auth notifications, and purging L1 (RAM), L2 (IndexedDB), and `virtualFiles` caches for deleted or modified remotes (including when the last remote is deleted).
+- **Remote Renaming in Edit Form:** Tracked `editingRemoteName` in `options.js` (`renameRemoteInConfig`), preventing duplicate ghost remotes when renaming, blocking collisions with existing remote names (`msg_remote_exists` in EN/DE), preserving non-schema custom INI keys while removing cleared schema fields, and updating dependent `crypt` overlay `remote` prefixes automatically.
+- **Verification:** Rebuilt `src/rclone.wasm` via `./build-wasm.sh`, verified `configInject` / `configDelete` / `cache.ClearConfig` in live WASM, and expanded the Node unit suite to 32 passing tests.
 

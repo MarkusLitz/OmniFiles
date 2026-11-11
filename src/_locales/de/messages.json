@@ -125,6 +125,10 @@
   "msg_name_type_req":  { "message": "Name und Typ sind erforderlich." },
   "msg_invalid_name":   { "message": "Ungültiges Remote-Namensformat." },
   "msg_name_req":       { "message": "Remote-Name ist erforderlich." },
+  "msg_remote_exists": {
+    "message": "Ein Remote namens '$NAME$' existiert bereits.",
+    "placeholders": { "name": { "content": "$1" } }
+  },
 
   "action_copy_link":     { "message": "🔗 Link kopieren" },
   "action_copy_path":     { "message": "📋 Pfad kopieren" },

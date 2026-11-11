@@ -176,9 +176,113 @@ function shouldOpenSetupPage(details) {
     return !!details && details.reason === 'install';
 }
 
+/**
+ * Compares two parsed INI config objects (plus optional extra known/mounted
+ * remote IDs) to classify remotes as added, removed, modified, or unchanged.
+ *
+ * `extraKnownRemotes` lets the Service Worker catch remotes that are still
+ * mounted in ChromeOS or listed in storage even when `oldConf` was empty or
+ * unavailable across a Service Worker restart.
+ *
+ * @param {Record<string, Record<string, string>>} [oldConf={}]
+ * @param {Record<string, Record<string, string>>} [newConf={}]
+ * @param {Iterable<string>} [extraKnownRemotes=[]]
+ * @returns {{added: string[], removed: string[], modified: string[], unchanged: string[]}}
+ */
+function diffRemoteConfigs(oldConf = {}, newConf = {}, extraKnownRemotes = []) {
+    const safeOld = oldConf && typeof oldConf === 'object' ? oldConf : {};
+    const safeNew = newConf && typeof newConf === 'object' ? newConf : {};
+
+    const added = [];
+    const removed = [];
+    const modified = [];
+    const unchanged = [];
+
+    const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+
+    for (const name of Object.keys(safeNew)) {
+        if (!hasOwn(safeOld, name)) {
+            added.push(name);
+            continue;
+        }
+        const prevSec = safeOld[name] || {};
+        const nextSec = safeNew[name] || {};
+        const prevKeys = Object.keys(prevSec);
+        const nextKeys = Object.keys(nextSec);
+        let same = prevKeys.length === nextKeys.length;
+        if (same) {
+            for (const k of nextKeys) {
+                if (!hasOwn(prevSec, k) || prevSec[k] !== nextSec[k]) {
+                    same = false;
+                    break;
+                }
+            }
+        }
+        if (same) unchanged.push(name);
+        else modified.push(name);
+    }
+
+    const removedSeen = new Set();
+    const recordRemoved = (name) => {
+        if (!name || hasOwn(safeNew, name) || removedSeen.has(name)) return;
+        removedSeen.add(name);
+        removed.push(name);
+    };
+
+    for (const name of Object.keys(safeOld)) recordRemoved(name);
+    if (extraKnownRemotes) {
+        for (const name of extraKnownRemotes) recordRemoved(name);
+    }
+
+    return { added, removed, modified, unchanged };
+}
+
+/**
+ * Updates or renames a remote inside a parsed INI config object, preserving
+ * section order on rename and updating any `crypt` overlay whose `remote`
+ * target points at `oldName:` (e.g. `oldName:` or `oldName:folder`).
+ *
+ * @param {Record<string, Record<string, string>>} parsedConfig
+ * @param {string|null|undefined} oldName Original remote name when editing, or null for new.
+ * @param {string} newName Target remote name.
+ * @param {Record<string, string>} newRemoteObj Updated key-value pairs for the section.
+ * @returns {Record<string, Record<string, string>>}
+ */
+function renameRemoteInConfig(parsedConfig, oldName, newName, newRemoteObj) {
+    const src = parsedConfig && typeof parsedConfig === 'object' ? parsedConfig : {};
+    if (!oldName || oldName === newName) {
+        return { ...src, [newName]: newRemoteObj };
+    }
+
+    const updated = {};
+    let placed = false;
+    const oldPrefix = oldName + ':';
+
+    for (const [secName, secVals] of Object.entries(src)) {
+        if (secName === oldName) {
+            updated[newName] = newRemoteObj;
+            placed = true;
+            continue;
+        }
+        if (secVals && secVals.type === 'crypt' && typeof secVals.remote === 'string' && secVals.remote.startsWith(oldPrefix)) {
+            updated[secName] = {
+                ...secVals,
+                remote: newName + secVals.remote.slice(oldName.length),
+            };
+        } else {
+            updated[secName] = secVals;
+        }
+    }
+
+    if (!placed) {
+        updated[newName] = newRemoteObj;
+    }
+    return updated;
+}
+
 // Node.js export for the unit tests; in the Service Worker (importScripts)
 // and on the options page (<script src>) the top-level function declarations
 // above simply become globals.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { parseIniConfig, serializeIniConfig, sanitizeTokenValue, getParentPath, mapErrorToFsp, isAuthError, escapeHtml, shouldOpenSetupPage };
+    module.exports = { parseIniConfig, serializeIniConfig, sanitizeTokenValue, getParentPath, mapErrorToFsp, isAuthError, escapeHtml, shouldOpenSetupPage, diffRemoteConfigs, renameRemoteInConfig };
 }
