@@ -220,7 +220,7 @@ self.onConfigChanged = function(section, key, value) {
     if (liveConfigCache[section] && liveConfigCache[section][key] === value) {
         return; // no-op re-assertion of an already-known value — skip the storage write
     }
-    console.log(`[Rclone] Config changed internally: [${section}] ${key} = ${value}`);
+    console.log(`[Rclone] Config changed internally: [${section}] ${key} = ${redactConfigValue(key, value)}`);
     configUpdateQueue = configUpdateQueue.then(() => {
         return new Promise((resolve) => {
             chrome.storage.local.get(['rcloneConf'], (result) => {
@@ -1896,7 +1896,7 @@ if (chrome.fileSystemProvider) {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('[Rclone] Received message:', request);
+    console.log('[Rclone] Received message:', redactRuntimeMessage(request));
     
     if (request.action === 'testConnection') {
         (async () => {

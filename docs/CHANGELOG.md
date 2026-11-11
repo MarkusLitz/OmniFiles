@@ -1007,3 +1007,13 @@ First release since the Web Store listing went up on 2026-08-08. Everything belo
 - **Remote Renaming in Edit Form:** Tracked `editingRemoteName` in `options.js` (`renameRemoteInConfig`), preventing duplicate ghost remotes when renaming, blocking collisions with existing remote names (`msg_remote_exists` in EN/DE), preserving non-schema custom INI keys while removing cleared schema fields, and updating dependent `crypt` overlay `remote` prefixes automatically.
 - **Verification:** Rebuilt `src/rclone.wasm` via `./build-wasm.sh`, verified `configInject` / `configDelete` / `cache.ClearConfig` in live WASM, and expanded the Node unit suite to 32 passing tests.
 
+---
+
+## 2026-11-11 – Session: Redact Sensitive Credentials from Service Worker Logs
+
+### Security (`src/config-utils.js`, `src/background.js`, `tests/config-utils.test.js`)
+- **Config Change Log Redaction:** Added `isSensitiveConfigKey` and `redactConfigValue` in `src/config-utils.js` and applied them in `self.onConfigChanged` (`src/background.js`) so refreshed OAuth tokens, passwords, secret keys, bearer tokens, and service-account JSON credentials are logged as `[REDACTED]` instead of cleartext.
+- **Runtime Message & Token Parse Redaction:** Added `redactRuntimeMessage` in `src/config-utils.js` and applied it in `chrome.runtime.onMessage` (`src/background.js`) so `testConnection` payloads containing raw `rclone.conf` text are never dumped to the Service Worker console. Also omitted raw `SyntaxError` objects from `sanitizeTokenValue` warnings so modern V8 JSON error context snippets cannot leak partial token strings.
+- **Verification:** Added 5 unit tests (including an automatic cross-check against all secret/obscured fields in `src/config-schemas.js`), bringing the Node test suite to 37/37 passing tests.
+
+

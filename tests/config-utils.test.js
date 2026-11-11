@@ -15,6 +15,9 @@ const {
     shouldOpenSetupPage,
     diffRemoteConfigs,
     renameRemoteInConfig,
+    isSensitiveConfigKey,
+    redactConfigValue,
+    redactRuntimeMessage,
 } = require('../src/config-utils.js');
 
 // ── parseIniConfig ──────────────────────────────────────────────────────
@@ -272,4 +275,125 @@ test('renameRemoteInConfig updates in place when name is unchanged', () => {
     const orig = { gdrive: { type: 'drive', token: 'old' } };
     const next = renameRemoteInConfig(orig, 'gdrive', 'gdrive', { type: 'drive', token: 'new' });
     assert.deepStrictEqual(next, { gdrive: { type: 'drive', token: 'new' } });
+});
+
+// ── isSensitiveConfigKey / redactConfigValue / redactRuntimeMessage ─────
+
+test('isSensitiveConfigKey detects all known schema and raw-config credential keys', () => {
+    const sensitiveKeys = [
+        'token',
+        'pass',
+        'password',
+        'password2',
+        'secret_access_key',
+        'client_secret',
+        'bearer_token',
+        'service_account_credentials',
+        'session_token',
+        'private_key',
+        'key_pem',
+        'api_key',
+        'sas_url',
+        'TOKEN',
+        '  client_secret  ',
+        'custom_auth_token',
+        'ssh_key_passphrase',
+    ];
+    for (const key of sensitiveKeys) {
+        assert.strictEqual(isSensitiveConfigKey(key), true, `Expected "${key}" to be sensitive`);
+    }
+});
+
+test('isSensitiveConfigKey leaves non-secret config keys unmasked', () => {
+    const publicKeys = [
+        'type',
+        'scope',
+        'region',
+        'provider',
+        'url',
+        'vendor',
+        'user',
+        'client_id',
+        'access_key_id',
+        'endpoint',
+        'acl',
+        'project_number',
+        'anonymous',
+        'team_drive',
+        'remote',
+        'filename_encryption',
+        'directory_name_encryption',
+        'bypass', // substring "pass" without segment boundary must not false-positive
+        '',
+        null,
+        undefined,
+    ];
+    for (const key of publicKeys) {
+        assert.strictEqual(isSensitiveConfigKey(key), false, `Expected "${key}" not to be sensitive`);
+    }
+});
+
+test('isSensitiveConfigKey covers every password / obscured field in config-schemas.js', () => {
+    const prevWindow = global.window;
+    global.window = {};
+    try {
+        delete require.cache[require.resolve('../src/config-schemas.js')];
+        require('../src/config-schemas.js');
+        const providers = global.window.rcloneProviders;
+        assert.ok(providers && Object.keys(providers).length > 0);
+        for (const [provKey, prov] of Object.entries(providers)) {
+            for (const field of prov.fields) {
+                if (field.type === 'password' || field.needsObscure) {
+                    assert.strictEqual(
+                        isSensitiveConfigKey(field.name),
+                        true,
+                        `Provider "${provKey}" secret field "${field.name}" must be redacted`
+                    );
+                }
+            }
+        }
+    } finally {
+        if (prevWindow === undefined) delete global.window;
+        else global.window = prevWindow;
+    }
+});
+
+test('redactConfigValue masks secrets and preserves ordinary config values', () => {
+    assert.strictEqual(
+        redactConfigValue('token', '{"access_token":"ya29.secret","refresh_token":"1//secret"}'),
+        '[REDACTED]'
+    );
+    assert.strictEqual(redactConfigValue('pass', 'obscured_pw'), '[REDACTED]');
+    assert.strictEqual(redactConfigValue('password2', 'obscured_salt'), '[REDACTED]');
+    assert.strictEqual(redactConfigValue('secret_access_key', 'wJalrXUtnFEMI/K7MDENG'), '[REDACTED]');
+    assert.strictEqual(redactConfigValue('service_account_credentials', '{"private_key":"..."}'), '[REDACTED]');
+    assert.strictEqual(redactConfigValue('type', 'drive'), 'drive');
+    assert.strictEqual(redactConfigValue('region', 'eu-central-1'), 'eu-central-1');
+    assert.strictEqual(redactConfigValue('url', null), '');
+});
+
+test('redactRuntimeMessage redacts raw config payloads without mutating the request', () => {
+    const req = {
+        action: 'testConnection',
+        config: '[gdrive]\ntype = drive\ntoken = {"access_token":"ya29.secret"}\n',
+    };
+    const safe = redactRuntimeMessage(req);
+    assert.deepStrictEqual(safe, {
+        action: 'testConnection',
+        config: '[REDACTED]',
+    });
+    // Original request must stay intact for the message handler to parse
+    assert.ok(req.config.includes('ya29.secret'));
+
+    // Non-sensitive messages pass through unchanged
+    assert.deepStrictEqual(redactRuntimeMessage({ action: 'getDashboardData' }), {
+        action: 'getDashboardData',
+    });
+
+    // Nested sensitive keys are also redacted
+    assert.deepStrictEqual(
+        redactRuntimeMessage({ action: 'custom', meta: { bearer_token: 'abc', vendor: 'nextcloud' } }),
+        { action: 'custom', meta: { bearer_token: '[REDACTED]', vendor: 'nextcloud' } }
+    );
+    assert.strictEqual(redactRuntimeMessage(null), null);
 });

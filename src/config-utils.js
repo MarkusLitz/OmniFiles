@@ -56,7 +56,9 @@ function sanitizeTokenValue(tokenStr) {
         }
         return JSON.stringify(token);
     } catch (e) {
-        console.warn('[Rclone] Could not parse token JSON for sanitization, using as-is:', e);
+        // Avoid logging the raw SyntaxError: modern V8 embeds a snippet of the
+        // input string in e.message, which could leak part of a token/secret.
+        console.warn('[Rclone] Could not parse token JSON for sanitization, using as-is.');
         return tokenStr;
     }
 }
@@ -280,9 +282,98 @@ function renameRemoteInConfig(parsedConfig, oldName, newName, newRemoteObj) {
     return updated;
 }
 
+// Known sensitive rclone configuration keys across all built-in schemas and
+// commonly imported raw rclone.conf sections.
+const SENSITIVE_CONFIG_KEYS = new Set([
+    'token',
+    'pass',
+    'password',
+    'password2',
+    'secret_access_key',
+    'client_secret',
+    'bearer_token',
+    'service_account_credentials',
+    'session_token',
+    'private_key',
+    'key_pem',
+    'api_key',
+    'sas_url',
+]);
+
+// Matches snake_case / kebab-case segments such as *_token, *_secret, *_pass,
+// password2, *_credentials, etc., without false-positives on words like "bypass".
+const SENSITIVE_KEY_SEGMENT_RE = /(?:^|[_-])(?:token|pass|passwd|password|passphrase|secret|credential|credentials)(?:$|[_-\d])/i;
+
+/**
+ * Returns true if an rclone config key holds a secret, password, or token
+ * that must never be written to Service Worker console logs in cleartext.
+ *
+ * @param {*} key Config key name.
+ * @returns {boolean}
+ */
+function isSensitiveConfigKey(key) {
+    if (typeof key !== 'string') return false;
+    const normalized = key.trim().toLowerCase();
+    if (!normalized) return false;
+    return SENSITIVE_CONFIG_KEYS.has(normalized) || SENSITIVE_KEY_SEGMENT_RE.test(normalized);
+}
+
+/**
+ * Masks the value of sensitive config keys with '[REDACTED]' for safe logging,
+ * leaving ordinary non-secret values (e.g. `type`, `region`, `url`) readable.
+ *
+ * @param {*} key Config key name.
+ * @param {*} value Config value.
+ * @returns {string}
+ */
+function redactConfigValue(key, value) {
+    if (isSensitiveConfigKey(key)) {
+        return '[REDACTED]';
+    }
+    return String(value ?? '');
+}
+
+/**
+ * Returns a log-safe shallow/deep clone of a `chrome.runtime.onMessage` payload
+ * with raw INI config strings (`config`, `rcloneConf`) and any sensitive keys
+ * replaced by '[REDACTED]'. Does not mutate the original request object.
+ *
+ * @param {*} request Runtime message payload.
+ * @returns {*}
+ */
+function redactRuntimeMessage(request) {
+    if (!request || typeof request !== 'object') return request;
+    if (Array.isArray(request)) return request.map(redactRuntimeMessage);
+    const copy = {};
+    for (const [k, v] of Object.entries(request)) {
+        if (k === 'config' || k === 'rcloneConf' || isSensitiveConfigKey(k)) {
+            copy[k] = '[REDACTED]';
+        } else if (v && typeof v === 'object') {
+            copy[k] = redactRuntimeMessage(v);
+        } else {
+            copy[k] = v;
+        }
+    }
+    return copy;
+}
+
 // Node.js export for the unit tests; in the Service Worker (importScripts)
 // and on the options page (<script src>) the top-level function declarations
 // above simply become globals.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { parseIniConfig, serializeIniConfig, sanitizeTokenValue, getParentPath, mapErrorToFsp, isAuthError, escapeHtml, shouldOpenSetupPage, diffRemoteConfigs, renameRemoteInConfig };
+    module.exports = {
+        parseIniConfig,
+        serializeIniConfig,
+        sanitizeTokenValue,
+        getParentPath,
+        mapErrorToFsp,
+        isAuthError,
+        escapeHtml,
+        shouldOpenSetupPage,
+        diffRemoteConfigs,
+        renameRemoteInConfig,
+        isSensitiveConfigKey,
+        redactConfigValue,
+        redactRuntimeMessage,
+    };
 }
