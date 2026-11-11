@@ -836,7 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 group.appendChild(help);
             }
 
-            const isCredential = ['token', 'pass', 'password', 'secret_access_key', 'client_secret'].includes(field.name);
+            const isCredential = ['token', 'pass', 'password', 'secret_access_key', 'client_secret', 'user'].includes(field.name);
             
             if (isCredential || def.fields.indexOf(field) < 2) {
                 guidedDynamicFields.appendChild(group);

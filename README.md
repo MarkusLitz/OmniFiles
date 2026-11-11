@@ -116,7 +116,7 @@ Right-click files in the ChromeOS Files app to:
 | Google Cloud Storage | `gcs` | ✅ Full support |
 | Google Photos | `googlephotos` | ✅ Compiled in |
 | Crypt (Encryption Overlay) | `crypt` | ✅ Full support |
-| WebDAV | `webdav` | 🚧 Planned — not yet compiled into WASM |
+| WebDAV | `webdav` | ✅ Full support (Nextcloud, ownCloud, etc.) |
 | SFTP / FTP / SMB | `sftp`, `ftp`, `smb` | ❌ Not possible — these protocols need raw TCP sockets, which are unavailable in Service Worker WASM (only `fetch()`-based HTTP works) |
 
 S3-compatible providers (Wasabi, DigitalOcean Spaces, MinIO, Ceph, etc.) are supported through the S3 backend. See [docs/ROADMAP.md](docs/ROADMAP.md) for the full compatibility analysis of all rclone backends.
@@ -229,7 +229,7 @@ Copy the resulting token JSON and paste it into the appropriate field in the wiz
 │  │  └── fileWriteStream()    → Streaming uploads    │     │
 │  │                                                  │     │
 │  │  Rclone backends: drive, onedrive, s3, dropbox,  │     │
-│  │  gcs, googlephotos, crypt, memory                │     │
+│  │  gcs, googlephotos, crypt, webdav, memory       │     │
 │  └──────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────┘
                        │

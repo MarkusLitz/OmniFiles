@@ -40,6 +40,7 @@ import (
 	_ "github.com/rclone/rclone/backend/memory"
 	_ "github.com/rclone/rclone/backend/onedrive"
 	_ "github.com/rclone/rclone/backend/s3"
+	_ "github.com/rclone/rclone/backend/webdav"
 )
 
 var (
@@ -133,6 +134,7 @@ func rcCallback(this js.Value, args []js.Value) interface{} {
 
 		return nil
 	})
+	defer handler.Release()
 
 	return js.Global().Get("Promise").New(handler)
 }
@@ -259,6 +261,7 @@ func fileReadCallback(this js.Value, args []js.Value) interface{} {
 
 		return nil
 	})
+	defer handler.Release()
 
 	return js.Global().Get("Promise").New(handler)
 }
@@ -345,6 +348,7 @@ func fileWriteCallback(this js.Value, args []js.Value) interface{} {
 		}()
 		return nil
 	})
+	defer handler.Release()
 	return js.Global().Get("Promise").New(handler)
 }
 
@@ -519,6 +523,7 @@ func fileWriteStreamCallback(this js.Value, args []js.Value) interface{} {
 		}()
 		return nil
 	})
+	defer handler.Release()
 	return js.Global().Get("Promise").New(handler)
 }
 

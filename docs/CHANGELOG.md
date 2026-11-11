@@ -981,3 +981,24 @@ First release since the Web Store listing went up on 2026-08-08. Everything belo
 
 ### Build
 `test_builds/omnifiles-v0.3.0-<timestamp>.zip` (~13 MB, 23 files), verified by loading the unpacked artifact in Chromium: service worker boots, manifest reports 0.3.0, the rclone WASM bridge initialises, the settings page opens on install and lands on Guided Setup with the picker grouped.
+
+---
+
+## 2026-09-16 – Session: WebDAV Backend Implementation
+
+### WebDAV Support (`src/wasm-bridge/main.go`, `src/config-schemas.js`, `src/options.js`, `build-wasm.sh`)
+- **Backend:** Added `_ "github.com/rclone/rclone/backend/webdav"` to `src/wasm-bridge/main.go`. Recompiled `src/rclone.wasm` via `./build-wasm.sh` with the HTTP `fetch()` transport override.
+- **Provider Schema:** Added `webdav` schema to `src/config-schemas.js` with `setup: "keys"`, allowing direct configuration without a desktop PC. Fields include `url`, `vendor` (Nextcloud, ownCloud, Other, Fastmail, SharePoint), `user`, `pass` (`needsObscure: true`), and optional `bearer_token`.
+- **Guided Setup:** Updated `isCredential` in `src/options.js` to include `'user'`, ensuring URL, Vendor, Username, and Password cleanly appear in Step 2 ("Credentials"), while optional/bearer tokens go to Step 3.
+- **Licenses:** Regenerated `src/third-party-licenses.txt` (99 modules, incorporating WebDAV and NTLMSSP dependencies).
+- **Docs:** Updated `README.md` and `docs/ROADMAP.md` reflecting full WebDAV support.
+- **Verification:** Full compilation succeeded, all 26 Node unit tests pass, and JS syntax check (`node --check`) clean.
+
+---
+
+## 2026-11-11 – Session: WASM Bridge `js.FuncOf` Memory Leak Fix
+
+### WASM Bridge (`src/wasm-bridge/main.go`, `src/rclone.wasm`)
+- **Bug Fix:** Added `defer handler.Release()` immediately before `Promise.New(handler)` in `rcCallback`, `fileReadCallback`, `fileWriteCallback`, and `fileWriteStreamCallback`. Previously, each Promise executor wrapper stayed permanently registered in Go's global `syscall/js` callback table (pinning its captured JS argument references) for the lifetime of the Service Worker.
+- **Build & Verification:** Rebuilt `src/rclone.wasm` via `./build-wasm.sh` and verified all four callbacks end-to-end against rclone's `memory` backend alongside all 26 Node unit tests.
+

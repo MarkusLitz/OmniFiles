@@ -109,6 +109,24 @@ const rcloneProviders = {
             { name: "token", label: "OAuth Token", type: "textarea", placeholder: "Paste JSON token here" }
         ]
     },
+    webdav: {
+        name: "WebDAV",
+        description: "Nextcloud, ownCloud, or generic WebDAV",
+        setup: "keys",
+        fields: [
+            { name: "url", label: "URL", type: "text", placeholder: "e.g. https://cloud.example.com/remote.php/dav/files/username/" },
+            { name: "vendor", label: "Vendor", type: "select", options: [
+                { value: "nextcloud", label: "Nextcloud" },
+                { value: "owncloud", label: "ownCloud" },
+                { value: "other", label: "Other / Generic WebDAV" },
+                { value: "fastmail", label: "Fastmail" },
+                { value: "sharepoint", label: "SharePoint Online" }
+            ], default: "nextcloud" },
+            { name: "user", label: "Username", type: "text", placeholder: "Username" },
+            { name: "pass", label: "Password", type: "password", placeholder: "Password or App Password", needsObscure: true },
+            { name: "bearer_token", label: "Bearer Token", type: "password", placeholder: "Optional (if using Bearer auth instead of password)" }
+        ]
+    },
     crypt: {
         name: "Crypt (Encryption Overlay)",
         description: "Encrypts an existing remote or folder",

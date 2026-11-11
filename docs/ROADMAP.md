@@ -17,10 +17,10 @@ As of: 2026-07-29 · Consolidated roadmap & completed milestone tracking.
 ## 🟡 Medium Priority – Features & UX
 
 ### 🔌 Add More Backends
-- **Problem:** Currently only `drive`, `onedrive`, `s3`, `dropbox`, `googlecloudstorage`, `googlephotos`, `crypt`, and `memory` are compiled in. WebDAV (Nextcloud/ownCloud), for example, is completely missing.
+- **Status (WebDAV):** ✅ `webdav` (Nextcloud/ownCloud/generic) is compiled in and supported via Guided Setup and Raw Config.
 - **Analysis (verified via source code grep for `net.Dial`/`ssh.NewClient` across all `backend/*` packages in the rclone repo, as of 2026-06-18):** The WASM build only works with backends that exclusively communicate via `net/http` (compatible with the `fetch()` transport patch from `build-wasm.sh`). Backends with custom `net.Dial`/raw TCP code fail like they originally did with `fshttp`.
-- **Solution:** Add the following backends simply via `_ "github.com/rclone/rclone/backend/<name>"` import in `src/wasm-bridge/main.go` (no patch needed, pure HTTP/REST) + one wizard schema each in `config-schemas.js`:
-  - **Priority 1 (widespread):** `webdav` (Nextcloud/ownCloud), `box`, `pcloud`, `b2` (Backblaze), `swift` (OpenStack), `azureblob`, `azurefiles`
+- **Remaining backends to add via `_ "github.com/rclone/rclone/backend/<name>"` import in `src/wasm-bridge/main.go`:**
+  - **Priority 1 (widespread):** `box`, `pcloud`, `b2` (Backblaze), `swift` (OpenStack), `azureblob`, `azurefiles`
   - **Other REST/HTTPS Backends (work just as well, lower user relevance):** `yandex`, `koofr`, `jottacloud`, `hidrive`, `opendrive`, `premiumizeme`, `putio`, `seafile`, `sharefile`, `sugarsync`, `quatrix`, `zoho`, `oracleobjectstorage`, `qingstor`, `internetarchive`, `netstorage`, `protondrive`, `pikpak`, `pixeldrain`, `gofile`, `filefabric`, `linkbox`, `filescom`, `filelu`, `drime`, `internxt`, `huaweidrive`, `iclouddrive`, `imagekit`, `cloudinary`, `ulozto`, `fichier`, `mailru`, `shade`, `doi`, `http` (generic read-only)
   - **Meta/Overlay Backends (work as soon as the referenced remote works — no custom network code):** `alias`, `union`, `combine`, `chunker`, `compress`, `hasher`, `archive`
 - **Intentionally exclude (raw TCP, incompatible with Service Worker WASM):** `sftp` (SSH), `ftp` (Control Channel), `smb` (SMB2), `hdfs` (Hadoop RPC), `storj` (custom DRPC/Satellite protocol via `storj.io/uplink`).
