@@ -1026,5 +1026,32 @@ First release since the Web Store listing went up on 2026-08-08. Everything belo
 - **Readable Error Messages:** Added `formatRcloneError` to unwrap WASM `rc()` rejection objects (`{ status, error, path }`) instead of displaying `[object Object]`, mapping temporary section names back to the user's original remote names.
 - **Verification:** Added 6 unit tests (43/43 passing) and verified multi-remote + `crypt` + live-remote isolation end-to-end against `src/rclone.wasm`.
 
+---
 
+## 2026-11-11 – Release 0.4.0
 
+Second Chrome Web Store release after `0.3.0`. Ships the WebDAV backend, full remote rename/delete/edit lifecycle management, isolated multi-remote connection testing, Service Worker log redaction, and the WASM `js.FuncOf` callback leak fix.
+
+### New backend: WebDAV (`webdav`)
+- Compiled `github.com/rclone/rclone/backend/webdav` into `src/rclone.wasm` with the browser `fetch()` transport override.
+- Added the WebDAV schema to `src/config-schemas.js` under the `"keys"` setup category (Nextcloud, ownCloud, Fastmail, SharePoint Online, and generic WebDAV servers) — configurable directly on a Chromebook with no desktop `rclone authorize` step required.
+- Updated `src/third-party-licenses.txt` and `THIRD_PARTY_LICENSES.md` with the linked WebDAV and NTLMSSP dependencies.
+
+### Remote lifecycle, renaming & cache cleanup
+- **Rename in Edit Remote:** Renaming an existing remote updates its section in place (`renameRemoteInConfig`), blocks collisions with existing remote names (`msg_remote_exists`), preserves custom non-schema INI keys, removes cleared optional fields, and automatically updates dependent `crypt` overlay `remote` prefixes.
+- **Delete & Edit Cleanup:** Deleting or editing a remote unmounts removed FSP volumes (`chrome.fileSystemProvider.unmount`), purges removed sections from WASM memory (`self.configDelete`) and `fs/cache` (`cache.ClearConfig`), and evicts stale L1 (RAM), L2 (IndexedDB), `virtualFiles`, `mountedFileSystems`, `remoteStatus`, and auth-expiry notifications across Service Worker restarts.
+
+### Isolated multi-remote connection testing
+- `testConnection` now validates and tests **every** remote section in a configuration (including sibling `crypt` overlays regardless of INI section order) under ephemeral `__omnifiles_test_*` section names.
+- Cleans up temporary sections and cached `Fs` instances in `finally` (`self.configDelete`), and guards `self.onConfigChanged` and `notifyAuthExpired` so unsaved connection tests never overwrite active mounted remotes, persist tokens to `chrome.storage.local`, or trigger OS auth notifications.
+- Unwraps WASM `rc()` rejection objects into human-readable messages (`formatRcloneError`) with original remote names restored.
+
+### Security & stability fixes
+- **WASM `js.FuncOf` leak fix:** Added `defer handler.Release()` across all Promise-returning WASM bridge callbacks (`rcCallback`, `fileReadCallback`, `fileWriteCallback`, `fileWriteStreamCallback`).
+- **Service Worker log redaction:** Redacted sensitive config keys (`token`, `pass`, `password`, `password2`, `secret_access_key`, `client_secret`, `bearer_token`, `service_account_credentials`), raw `testConnection` config payloads, and V8 token JSON parse snippets from Service Worker console logs (`[REDACTED]`).
+
+### Version bump rationale
+`VERSIONING.md` reserves MINOR for "new features, new rclone backends, or significant UI improvements". Adding the WebDAV backend alongside remote renaming and full remote lifecycle management places this release at `0.4.0`.
+
+### Build
+`test_builds/omnifiles-v0.4.0-20261111-211108.zip` (~13 MB, 23 files), verified with `node --check` across all extension scripts, JSON schema/parity validation (`129/129` EN/DE keys), and `43/43` passing unit tests.

@@ -10,7 +10,7 @@ reproduces their license terms, as required for redistribution.
 > **Scope note.** `rclone.wasm` is a statically linked Go binary. The exact
 > set of modules linked into it depends on the rclone backends compiled in
 > (see `src/wasm-bridge/main.go`): **Google Drive, Microsoft OneDrive,
-> Amazon S3, Dropbox, Google Cloud Storage, Google Photos, Crypt, and
+> Amazon S3, Dropbox, Google Cloud Storage, Google Photos, WebDAV, Crypt, and
 > Memory**, plus rclone core and the `fetch()` transport patch. The lists
 > below cover the principal modules for those backends and the license
 > families that apply. The authoritative, per-module manifest — generated

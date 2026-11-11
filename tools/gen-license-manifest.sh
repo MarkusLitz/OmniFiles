@@ -29,6 +29,7 @@
 # pinned RCLONE_COMMIT so rclone's own row is not left blank.
 
 set -e
+export LC_ALL=C
 
 PKG_DIR="${1:?usage: gen-license-manifest.sh <package-dir> <output-file>}"
 OUT="${2:?usage: gen-license-manifest.sh <package-dir> <output-file>}"

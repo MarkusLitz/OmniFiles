@@ -42,7 +42,7 @@ Nothing has to be copied onto your Chromebook for this to work, and no browser t
 
 - **Chromebooks only.** OmniFiles plugs into the ChromeOS Files app, so it does nothing on Windows, macOS, or desktop Linux.
 - **Connecting an account takes one technical step, for now.** Google Drive, OneDrive, Dropbox and Google Photos each need a one-time authorisation performed on a desktop computer, then pasted in (see [Configuration](#configuration)). Services that use plain access keys, such as S3, skip this entirely. Turning the first kind into an ordinary one-click sign-in is a planned improvement — see the [roadmap](#roadmap).
-- **It's early software.** Version 0.3.0, published on the [Chrome Web Store](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo). Copying files *between* two connected clouds isn't supported yet — copy and move work within one drive at a time.
+- **It's early software.** Version 0.4.0, published on the [Chrome Web Store](https://chromewebstore.google.com/detail/omnifiles/bdcjbkaghidiffifjhiklniadlfgdipo). Copying files *between* two connected clouds isn't supported yet — copy and move work within one drive at a time.
 
 ---
 
@@ -78,10 +78,10 @@ Nothing has to be copied onto your Chromebook for this to work, and no browser t
 ### 🔧 Configuration UI
 - **Guided Setup Wizard**: the single route for adding a remote — step-by-step, with schema-driven form fields and no manual INI editing
 - **Provider picker grouped by setup effort**: providers are sorted by what they actually cost you, so the ones needing a one-time step on a desktop computer are marked as such *before* you pick one
-- **Edit form**: change an existing remote from Manage Remotes, with stored passwords revealed for editing
+- **Edit form**: change or rename an existing remote from Manage Remotes, with stored passwords revealed for editing and dependent `crypt` overlays updated automatically
 - **Advanced Raw Editor**: paste/edit `rclone.conf` directly with INI syntax highlighting
 - **Import/Export**: download your config as a file or import an existing one
-- **Connection Test**: verify your remote works before saving
+- **Connection Test**: verify every remote in your configuration works before saving, isolated from active mounts
 - **Auto-Obscure**: passwords are automatically converted to rclone's AES-CTR obscure format — no need to run `rclone obscure` manually. Note: like rclone itself, this is *obfuscation with a fixed, public key*, not secure encryption; the config (including OAuth tokens) is stored unencrypted in `chrome.storage.local` (see Roadmap: Encrypted Configuration)
 
 ### 📊 Dashboard
@@ -264,7 +264,7 @@ Copy the resulting token JSON and paste it into the appropriate field in the wiz
 
 This script will:
 
-1. **Download Go** (v1.22.2) into `build_tmp/`
+1. **Download Go** (v1.25.0) into `build_tmp/`
 2. **Clone rclone** from the official repository
 3. **Inject the custom WASM bridge** (`src/wasm-bridge/main.go`)
 4. **Patch the HTTP transport** for Service Worker compatibility
@@ -312,7 +312,7 @@ OmniFiles/
 
 ## Versioning
 
-This project follows [Semantic Versioning 2.0.0](https://semver.org/). The current version is **`0.3.0`**.
+This project follows [Semantic Versioning 2.0.0](https://semver.org/). The current version is **`0.4.0`**.
 
 The `version` field in `src/manifest.json` is the single source of truth.
 
@@ -332,7 +332,7 @@ The `version` field in `src/manifest.json` is the single source of truth.
 - **Large Directory Pagination** — paginated `operations/list` to handle folders with thousands of files
 
 ### 🟡 Medium Priority
-- WebDAV backend support (Nextcloud / ownCloud)
+- ~~**WebDAV backend support (Nextcloud / ownCloud)**~~ ✅ *Done* — compiled into `rclone.wasm` and configurable directly via Guided Setup (`keys` category) or Raw Config
 - Encrypted configuration storage (AES-GCM via SubtleCrypto)
 - Manual sync command with progress UI
 - Cross-remote copy/move
