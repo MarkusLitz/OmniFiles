@@ -1016,4 +1016,15 @@ First release since the Web Store listing went up on 2026-08-08. Everything belo
 - **Runtime Message & Token Parse Redaction:** Added `redactRuntimeMessage` in `src/config-utils.js` and applied it in `chrome.runtime.onMessage` (`src/background.js`) so `testConnection` payloads containing raw `rclone.conf` text are never dumped to the Service Worker console. Also omitted raw `SyntaxError` objects from `sanitizeTokenValue` warnings so modern V8 JSON error context snippets cannot leak partial token strings.
 - **Verification:** Added 5 unit tests (including an automatic cross-check against all secret/obscured fields in `src/config-schemas.js`), bringing the Node test suite to 37/37 passing tests.
 
+---
+
+## 2026-11-11 – Session: Isolate `testConnection` & Test All Remotes
+
+### Reliability (`src/background.js`, `src/config-utils.js`, `tests/config-utils.test.js`)
+- **Multi-Remote Connection Testing:** Updated the `testConnection` message handler in `src/background.js` (`buildEphemeralTestPlan`, `summarizeTestConnectionResults`) to validate and test **every** remote section in a submitted configuration rather than only `remotes[0]`. All valid sections are injected up front before listing so overlay remotes (`crypt`) resolve sibling base remotes regardless of section order in `rclone.conf`, while single-remote overlays in Guided Setup still resolve already-saved remotes via `configureRclone()`.
+- **Zero Side Effects on Live State & Storage:** Isolated `testConnection` sections under ephemeral `__omnifiles_test_*` names, purged them in a `finally` block via `self.configDelete` (evicting both `config.LoadedData()` and `fs/cache`), and guarded `self.onConfigChanged` and `notifyAuthExpired` via `isEphemeralTestSection` so unsaved connection tests never overwrite active mounted remotes, write refreshed tokens/status to `chrome.storage.local`, or trigger spurious OS auth-expiry notifications.
+- **Readable Error Messages:** Added `formatRcloneError` to unwrap WASM `rc()` rejection objects (`{ status, error, path }`) instead of displaying `[object Object]`, mapping temporary section names back to the user's original remote names.
+- **Verification:** Added 6 unit tests (43/43 passing) and verified multi-remote + `crypt` + live-remote isolation end-to-end against `src/rclone.wasm`.
+
+
 

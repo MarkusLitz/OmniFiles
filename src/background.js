@@ -82,7 +82,7 @@ const AUTH_NOTIF_PREFIX = 'rclone-auth-';
 const lastAuthNotify = new Map(); // remoteName → timestamp of last notification
 
 function notifyAuthExpired(remoteName, err) {
-    if (!remoteName) return;
+    if (!remoteName || isEphemeralTestSection(remoteName)) return;
     const now = Date.now();
     if (now - (lastAuthNotify.get(remoteName) || 0) < AUTH_NOTIFY_THROTTLE_MS) return;
     lastAuthNotify.set(remoteName, now);
@@ -217,6 +217,9 @@ let liveConfigCache = {};
 
 // Callback invoked by Go WASM when configuration keys change (e.g. OAuth token refresh)
 self.onConfigChanged = function(section, key, value) {
+    if (isEphemeralTestSection(section)) {
+        return; // ephemeral testConnection section — never persist to storage or cache
+    }
     if (liveConfigCache[section] && liveConfigCache[section][key] === value) {
         return; // no-op re-assertion of an already-known value — skip the storage write
     }
@@ -1895,54 +1898,93 @@ if (chrome.fileSystemProvider) {
     console.log('[Rclone] FileSystemProvider API NOT available. (Are you on ChromeOS?)');
 }
 
+let _testConnectionSeq = 0;
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('[Rclone] Received message:', redactRuntimeMessage(request));
     
     if (request.action === 'testConnection') {
         (async () => {
+            const injectedTempNames = [];
             try {
                 // Wait for WASM to be ready
                 await self.rcValid;
-                
-                const parsedConf = parseIniConfig(request.config);
+
+                const parsedConf = parseIniConfig(request.config || '');
                 const remotes = Object.keys(parsedConf);
-                
+
                 if (remotes.length === 0) {
                     sendResponse({ success: false, error: 'No remotes found in provided config.' });
                     return;
                 }
-                
-                // Pick the first remote to test
-                const testRemote = remotes[0];
-                const remoteConfig = parsedConf[testRemote];
-                
-                console.log(`[Rclone] Testing connection for remote: ${testRemote}`);
-                
-                // Sanitize token JSON if present
-                if (remoteConfig.token) {
-                    remoteConfig.token = sanitizeTokenValue(remoteConfig.token);
+
+                // Ensure any already-saved remotes are loaded in WASM first so
+                // testing a single overlay remote (e.g. Guided Setup `crypt`
+                // wrapping an existing saved remote) can resolve its base remote
+                // even after a cold Service Worker wakeup.
+                await configureRclone().catch(() => {});
+
+                const runId = `${Date.now()}_${++_testConnectionSeq}`;
+                const { entries, tempToName } = buildEphemeralTestPlan(parsedConf, runId);
+
+                // Pass 1: inject all valid sections under temporary names up front
+                // so overlay remotes (e.g. `crypt`) can resolve sibling sections
+                // regardless of section order in `rclone.conf`.
+                for (const entry of entries) {
+                    if (entry.validationError) continue;
+                    const injectRes = self.configInject(entry.tempName, entry.config);
+                    if (injectRes && injectRes.error) {
+                        entry.injectError = `Config inject failed: ${injectRes.error}`;
+                    } else {
+                        injectedTempNames.push(entry.tempName);
+                    }
                 }
-                
-                // Inject config into WASM
-                const injectRes = self.configInject(testRemote, remoteConfig);
-                if (injectRes && injectRes.error) {
-                    sendResponse({ success: false, error: `Config inject failed: ${injectRes.error}` });
-                    return;
+
+                // Pass 2: test every remote and collect per-remote results.
+                const results = [];
+                for (const entry of entries) {
+                    if (entry.validationError) {
+                        results.push({ remote: entry.name, success: false, error: entry.validationError });
+                        continue;
+                    }
+                    if (entry.injectError) {
+                        results.push({ remote: entry.name, success: false, error: entry.injectError });
+                        continue;
+                    }
+
+                    console.log(`[Rclone] Testing connection for remote: ${entry.name}`);
+                    try {
+                        const listRes = await self.rc('operations/list', {
+                            fs: entry.tempName + ':',
+                            remote: '',
+                            opt: {}
+                        });
+                        const count = listRes && Array.isArray(listRes.list) ? listRes.list.length : 0;
+                        console.log(`[Rclone] Test connection list succeeded for ${entry.name} (${count} root entries)`);
+                        results.push({ remote: entry.name, success: true });
+                    } catch (err) {
+                        const errMsg = formatRcloneError(err, tempToName);
+                        console.error(`[Rclone] Test connection error for ${entry.name}:`, errMsg);
+                        results.push({ remote: entry.name, success: false, error: errMsg });
+                    }
                 }
-                
-                // Test by listing root
-                const listRes = await self.rc('operations/list', {
-                    fs: testRemote + ':',
-                    remote: '',
-                    opt: {}
-                });
-                
-                console.log('[Rclone] Test connection list result:', listRes);
-                
-                sendResponse({ success: true, remotes: remotes });
+
+                sendResponse(summarizeTestConnectionResults(results));
             } catch (err) {
                 console.error('[Rclone] Test connection error:', err);
-                sendResponse({ success: false, error: err.toString() });
+                sendResponse({ success: false, error: formatRcloneError(err) });
+            } finally {
+                // Purge all temporary sections and cached Fs instances in reverse
+                // order so live WASM config and `fs/cache` remain completely untouched.
+                if (typeof self.configDelete === 'function') {
+                    for (let i = injectedTempNames.length - 1; i >= 0; i--) {
+                        try {
+                            self.configDelete(injectedTempNames[i]);
+                        } catch (cleanupErr) {
+                            console.warn(`[Rclone] Failed to delete ephemeral test config ${injectedTempNames[i]}:`, cleanupErr);
+                        }
+                    }
+                }
             }
         })();
         
@@ -2218,7 +2260,7 @@ async function checkAllRemotes() {
                         // auth_expired = refresh token dead, user must re-authorize;
                         // the notification itself is fired by the wrapped self.rc()
                         status: isAuthError(e) ? 'auth_expired' : 'offline',
-                        error: e.toString(),
+                        error: formatRcloneError(e),
                         timestamp: Date.now()
                     };
                 }

@@ -18,6 +18,11 @@ const {
     isSensitiveConfigKey,
     redactConfigValue,
     redactRuntimeMessage,
+    isEphemeralTestSection,
+    isValidRemoteName,
+    buildEphemeralTestPlan,
+    formatRcloneError,
+    summarizeTestConnectionResults,
 } = require('../src/config-utils.js');
 
 // ── parseIniConfig ──────────────────────────────────────────────────────
@@ -396,4 +401,123 @@ test('redactRuntimeMessage redacts raw config payloads without mutating the requ
         { action: 'custom', meta: { bearer_token: '[REDACTED]', vendor: 'nextcloud' } }
     );
     assert.strictEqual(redactRuntimeMessage(null), null);
+});
+
+// ── testConnection isolation & multi-remote helpers ─────────────────────
+
+test('isEphemeralTestSection identifies temporary testConnection sections only', () => {
+    assert.strictEqual(isEphemeralTestSection('__omnifiles_test_1700000_1_0'), true);
+    assert.strictEqual(isEphemeralTestSection('gdrive'), false);
+    assert.strictEqual(isEphemeralTestSection(''), false);
+    assert.strictEqual(isEphemeralTestSection(null), false);
+});
+
+test('isValidRemoteName matches rclone fspath remote naming rules', () => {
+    assert.strictEqual(isValidRemoteName('gdrive'), true);
+    assert.strictEqual(isValidRemoteName('My_Work-Drive.1'), true);
+    assert.strictEqual(isValidRemoteName('My Cloud Drive'), true);
+    assert.strictEqual(isValidRemoteName('-leading-dash'), false);
+    assert.strictEqual(isValidRemoteName(' leading-space'), false);
+    assert.strictEqual(isValidRemoteName('trailing-space '), false);
+    assert.strictEqual(isValidRemoteName('bad:colon'), false);
+    assert.strictEqual(isValidRemoteName('bad/slash'), false);
+    assert.strictEqual(isValidRemoteName('__omnifiles_test_1_0'), false);
+    assert.strictEqual(isValidRemoteName(''), false);
+});
+
+test('buildEphemeralTestPlan isolates sections and rewrites sibling overlay targets regardless of order', () => {
+    const rawConf = {
+        // crypt listed BEFORE its base remote in INI order
+        vault: { type: 'crypt', remote: 'gdrive:encrypted/sub', password: 'obs' },
+        // crypt referencing an already-saved external remote not in rawConf
+        extVault: { type: 'crypt', remote: 'savedS3:bucket/sec', password: 'obs' },
+        gdrive: {
+            type: 'drive',
+            token: JSON.stringify({ access_token: 'x', expiry: '2026-04-13T18  :47:21' }),
+        },
+    };
+    const plan = buildEphemeralTestPlan(rawConf, '42_1');
+
+    assert.strictEqual(plan.entries.length, 3);
+    const [vaultEntry, extEntry, driveEntry] = plan.entries;
+
+    assert.strictEqual(vaultEntry.tempName, '__omnifiles_test_42_1_0');
+    assert.strictEqual(extEntry.tempName, '__omnifiles_test_42_1_1');
+    assert.strictEqual(driveEntry.tempName, '__omnifiles_test_42_1_2');
+
+    // Sibling remote rewritten to temporary section name
+    assert.strictEqual(vaultEntry.config.remote, '__omnifiles_test_42_1_2:encrypted/sub');
+    // Saved external remote reference preserved as-is
+    assert.strictEqual(extEntry.config.remote, 'savedS3:bucket/sec');
+    // Token sanitized on the clone without mutating caller's rawConf
+    assert.strictEqual(JSON.parse(driveEntry.config.token).expiry, '2026-04-13T18:47:21');
+    assert.ok(rawConf.gdrive.token.includes('18  :47:21'));
+});
+
+test('buildEphemeralTestPlan flags invalid remote names and missing type fields', () => {
+    const plan = buildEphemeralTestPlan({
+        '-bad': { type: 's3' },
+        notype: { region: 'eu-central-1' },
+        good: { type: 'webdav', url: 'https://cloud.example.com' },
+    }, '7');
+
+    assert.ok(plan.entries[0].validationError.includes('Invalid remote name'));
+    assert.strictEqual(plan.entries[0].config, null);
+    assert.ok(plan.entries[1].validationError.includes('type'));
+    assert.strictEqual(plan.entries[1].config, null);
+    assert.strictEqual(plan.entries[2].validationError, null);
+    assert.strictEqual(plan.entries[2].config.type, 'webdav');
+});
+
+test('formatRcloneError unwraps rc rejection objects and restores original remote names', () => {
+    const tempToName = {
+        __omnifiles_test_9_1: 'first',
+        __omnifiles_test_9_10: 'tenth',
+    };
+    const rcErr = {
+        status: 404,
+        error: 'method call failed: error in ListJSON: failed on "__omnifiles_test_9_10:" and "__omnifiles_test_9_1:"',
+        path: 'operations/list',
+    };
+    assert.strictEqual(
+        formatRcloneError(rcErr, tempToName),
+        'failed on "tenth:" and "first:"'
+    );
+    assert.strictEqual(formatRcloneError(new Error('network timeout')), 'network timeout');
+    assert.strictEqual(formatRcloneError('plain failure'), 'plain failure');
+    assert.strictEqual(formatRcloneError(null), 'Unknown error');
+});
+
+test('summarizeTestConnectionResults reports all remotes and per-remote errors', () => {
+    assert.deepStrictEqual(
+        summarizeTestConnectionResults([
+            { remote: 'gdrive', success: true },
+            { remote: 's3work', success: true },
+        ]),
+        {
+            success: true,
+            remotes: ['gdrive', 's3work'],
+            results: [
+                { remote: 'gdrive', success: true },
+                { remote: 's3work', success: true },
+            ],
+        }
+    );
+
+    // Single remote failure uses unprefixed error message
+    const singleFail = summarizeTestConnectionResults([
+        { remote: 'gdrive', success: false, error: 'invalid_grant' },
+    ]);
+    assert.strictEqual(singleFail.success, false);
+    assert.strictEqual(singleFail.error, 'invalid_grant');
+
+    // Multi-remote failure names each failing section while preserving full results
+    const multiFail = summarizeTestConnectionResults([
+        { remote: 'gdrive', success: true },
+        { remote: 's3bad', success: false, error: 'InvalidAccessKeyId' },
+        { remote: 'vault', success: false, error: 'directory not found' },
+    ]);
+    assert.strictEqual(multiFail.success, false);
+    assert.strictEqual(multiFail.error, '[s3bad] InvalidAccessKeyId; [vault] directory not found');
+    assert.deepStrictEqual(multiFail.remotes, ['gdrive', 's3bad', 'vault']);
 });

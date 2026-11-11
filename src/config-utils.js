@@ -357,6 +357,176 @@ function redactRuntimeMessage(request) {
     return copy;
 }
 
+// Prefix used by `testConnection` to isolate unsaved test sections in WASM
+// from live mounted remotes, `liveConfigCache`, `chrome.storage.local`, and
+// auth-expiry notifications.
+const EPHEMERAL_TEST_PREFIX = '__omnifiles_test_';
+
+// Matches rclone's `fspath.CheckConfigName` rule: Unicode letters/numbers,
+// `_`, `-`, `.`, `+`, `@`, and internal spaces, not starting with `-` or space
+// and not ending with space.
+const RCLONE_REMOTE_NAME_RE = /^[\w\p{L}\p{N}.+@]+(?:[ -]+[\w\p{L}\p{N}.+@-]+)*$/u;
+
+/**
+ * Returns true if `section` is an ephemeral section name created by
+ * `testConnection` that must never be persisted to storage or trigger
+ * user-facing auth notifications.
+ *
+ * @param {*} section Section / remote name.
+ * @returns {boolean}
+ */
+function isEphemeralTestSection(section) {
+    return typeof section === 'string' && section.startsWith(EPHEMERAL_TEST_PREFIX);
+}
+
+/**
+ * Validates an rclone remote section name against rclone's `fspath` rules.
+ *
+ * @param {*} name Remote name.
+ * @returns {boolean}
+ */
+function isValidRemoteName(name) {
+    return typeof name === 'string' &&
+        name.length > 0 &&
+        !isEphemeralTestSection(name) &&
+        RCLONE_REMOTE_NAME_RE.test(name);
+}
+
+/**
+ * Builds an isolated execution plan for `testConnection` so every section in a
+ * submitted `rclone.conf` is tested under a unique temporary WASM section name
+ * without mutating or evicting live mounted remotes. Intra-config overlay
+ * references (e.g. `crypt` `remote = base:folder`) are rewritten to point at
+ * the corresponding temporary base section when `base` is part of the same
+ * submitted config, while references to already-saved remotes remain intact.
+ *
+ * @param {Record<string, Record<string, string>>} parsedConf Parsed INI config.
+ * @param {string|number} [runId='0'] Unique identifier for this test run.
+ * @returns {{
+ *   entries: Array<{name: string, tempName: string, config: Record<string, string>|null, validationError: string|null}>,
+ *   tempToName: Record<string, string>
+ * }}
+ */
+function buildEphemeralTestPlan(parsedConf, runId = '0') {
+    const safeConf = parsedConf && typeof parsedConf === 'object' ? parsedConf : {};
+    const safeRunId = String(runId ?? '0').replace(/[^a-zA-Z0-9_]/g, '_');
+    const names = Object.keys(safeConf);
+    const nameToTemp = {};
+    const tempToName = {};
+
+    names.forEach((name, idx) => {
+        const tempName = `${EPHEMERAL_TEST_PREFIX}${safeRunId}_${idx}`;
+        nameToTemp[name] = tempName;
+        tempToName[tempName] = name;
+    });
+
+    const entries = [];
+    for (const name of names) {
+        const rawSec = safeConf[name];
+        const tempName = nameToTemp[name];
+
+        if (!isValidRemoteName(name)) {
+            entries.push({
+                name,
+                tempName,
+                config: null,
+                validationError: `Invalid remote name "${name}".`,
+            });
+            continue;
+        }
+
+        if (!rawSec || typeof rawSec !== 'object' || !String(rawSec.type || '').trim()) {
+            entries.push({
+                name,
+                tempName,
+                config: null,
+                validationError: 'Missing required "type" field.',
+            });
+            continue;
+        }
+
+        const cloned = { ...rawSec };
+        if (cloned.token) {
+            cloned.token = sanitizeTokenValue(cloned.token);
+        }
+        if (typeof cloned.remote === 'string') {
+            const colonIdx = cloned.remote.indexOf(':');
+            if (colonIdx > 0) {
+                const targetName = cloned.remote.slice(0, colonIdx);
+                if (Object.prototype.hasOwnProperty.call(nameToTemp, targetName)) {
+                    cloned.remote = nameToTemp[targetName] + cloned.remote.slice(colonIdx);
+                }
+            }
+        }
+
+        entries.push({
+            name,
+            tempName,
+            config: cloned,
+            validationError: null,
+        });
+    }
+
+    return { entries, tempToName };
+}
+
+/**
+ * Extracts a clean, human-readable error message from WASM `rc()` rejection
+ * objects (`{ status, error, path }`), `Error` instances, or plain strings, and
+ * maps any temporary test section names back to the user's original remote names.
+ *
+ * @param {*} err Error value from WASM or JS.
+ * @param {Record<string, string>|null} [tempToName=null] Mapping of tempName → original name.
+ * @returns {string}
+ */
+function formatRcloneError(err, tempToName = null) {
+    let text = '';
+    if (err && typeof err === 'object') {
+        text = String(err.error || err.message || '');
+        if (!text) {
+            try { text = JSON.stringify(err); } catch (_) { text = String(err); }
+        }
+    } else {
+        text = String(err ?? '');
+    }
+
+    text = text
+        .replace(/^method call failed:\s*/i, '')
+        .replace(/^error in ListJSON:\s*/i, '')
+        .trim();
+
+    if (tempToName && typeof tempToName === 'object') {
+        const tempKeys = Object.keys(tempToName).sort((a, b) => b.length - a.length);
+        for (const tempKey of tempKeys) {
+            if (tempKey && text.includes(tempKey)) {
+                text = text.split(tempKey).join(tempToName[tempKey]);
+            }
+        }
+    }
+
+    return text || 'Unknown error';
+}
+
+/**
+ * Aggregates per-remote `testConnection` outcomes into the response payload
+ * expected by the Options UI (`{ success, remotes, results, error? }`).
+ *
+ * @param {Array<{remote: string, success: boolean, error?: string}>} results
+ * @returns {{success: boolean, remotes: string[], results: Array<{remote: string, success: boolean, error?: string}>, error?: string}}
+ */
+function summarizeTestConnectionResults(results) {
+    const list = Array.isArray(results) ? results : [];
+    const remotes = list.map(r => r.remote);
+    const failed = list.filter(r => !r.success);
+    if (failed.length === 0) {
+        return { success: true, remotes, results: list };
+    }
+    const error = list.length === 1
+        ? failed[0].error
+        : failed.map(f => `[${f.remote}] ${f.error}`).join('; ');
+    return { success: false, error, remotes, results: list };
+}
+
 // Node.js export for the unit tests; in the Service Worker (importScripts)
 // and on the options page (<script src>) the top-level function declarations
 // above simply become globals.
@@ -375,5 +545,10 @@ if (typeof module !== 'undefined' && module.exports) {
         isSensitiveConfigKey,
         redactConfigValue,
         redactRuntimeMessage,
+        isEphemeralTestSection,
+        isValidRemoteName,
+        buildEphemeralTestPlan,
+        formatRcloneError,
+        summarizeTestConnectionResults,
     };
 }
